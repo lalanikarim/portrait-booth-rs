@@ -1,8 +1,18 @@
 services:
-  surrealdb:
-    image: surrealdb/surrealdb:latest
+  # surrealdb:
+  #   image: surrealdb/surrealdb:latest
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - ./db:/mydata
+  #   command: ["start", "--log", "debug", "--user", "${SURREALDB_USERNAME}", "--pass", "${SURREALDB_PASSWORD}", "file:/mydata/mydatabase.db"]
+  mysql:
+    image: mysql:8.0.33
     ports:
-      - "8000:8000"
+      - "3306:3306"
+      - "33060:33060"
     volumes:
-      - ./db:/mydata
-    command: ["start", "--log", "debug", "--user", "${SURREALDB_USERNAME}", "--pass", "${SURREALDB_PASSWORD}", "file:/mydata/mydatabase.db"]
+      - ./db:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command: --default-authentication-plugin=mysql_native_password
