@@ -34,6 +34,7 @@ pub enum Role {
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::MySqlPool;
+        use axum_login::{secrecy::SecretVec, AuthUser};
         impl User {
             pub async fn get(id: i64, pool: &MySqlPool) -> Option<Self> {
                 let user = sqlx::query_as::<_,User>("SELECT * FROM users WHERE id = ?")
@@ -53,6 +54,15 @@ cfg_if::cfg_if! {
                     .execute(pool)
                     .await
                     .map(|result| result.last_insert_id())
+            }
+        }
+        impl AuthUser<i64> for User {
+            fn get_id(&self) -> i64 {
+                self.id
+            }
+
+            fn get_password_hash(&self) ->SecretVec<u8> {
+                SecretVec::new(self.password_hash.clone().into())
             }
         }
     }
