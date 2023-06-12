@@ -17,11 +17,16 @@ async fn login_request(
     username: String,
     password: String,
 ) -> Result<LoginResponse, ServerFnError> {
+    use crate::auth::auth;
+    log!("Login Request");
+    let auth = auth(cx)?;
+    log!("{:?}", auth);
     let response = match username.as_str() {
         "lock" => LoginResponse::LockedOut,
         "inactive" => LoginResponse::NotActivated,
         _ => {
             if username == password {
+                //auth.login(&User::default()).await.unwrap();
                 LoginResponse::LoggedIn(User::default())
             } else {
                 LoginResponse::InvalidCredentials

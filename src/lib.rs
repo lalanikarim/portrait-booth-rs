@@ -19,3 +19,8 @@ cfg_if! { if #[cfg(feature = "hydrate")] {
         });
     }
 }}
+cfg_if! {
+    if #[cfg(feature = "ssr")] {
+        pub mod auth;
+    }
+}
