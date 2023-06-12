@@ -4,7 +4,9 @@ cfg_if! { if #[cfg(feature = "ssr")] {
 #[macro_use]
 extern crate dotenv_codegen;
 
-use axum::extract::State;
+use portrait_booth::auth::{AuthSessionLayer, AuthSession};
+use axum_session_auth::AuthConfig;
+use axum_session::Session;
 use axum::{extract::Extension, Router};
 use leptos::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
@@ -14,9 +16,6 @@ use portrait_booth::fileserv::file_and_error_handler;
 use std::sync::Arc;
 pub mod models;
 pub mod auth;
-pub mod state;
-use crate::models::user::*;
-use auth::AuthSession;
 use axum::body::Body as AxumBody;
 use axum::extract::{Path, RawQuery};
 use axum::http::Request;
@@ -24,14 +23,13 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum_session::SessionLayer;
 use axum_session::{SessionConfig, SessionMySqlPool, SessionStore};
-use axum_session_auth::AuthConfig;
-use axum_session_auth::AuthSessionLayer;
-use http::HeaderMap;
 use leptos_axum::handle_server_fns_with_context;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::MySqlPool;
+use http::HeaderMap;
 async fn server_fn_handler(
     Extension(pool): Extension<MySqlPool>,
+    session: Session<SessionMySqlPool>,
     auth_session: AuthSession,
     path: Path<String>,
     headers: HeaderMap,
@@ -45,6 +43,7 @@ async fn server_fn_handler(
         headers,
         raw_query,
         move |cx| {
+            provide_context(cx, session.clone());
             provide_context(cx, auth_session.clone());
             provide_context(cx, pool.clone());
         },
@@ -55,13 +54,15 @@ async fn server_fn_handler(
 
 async fn leptos_routes_handler(
     Extension(pool): Extension<MySqlPool>,
+    Extension(options): Extension<Arc<LeptosOptions>>,
+    session: Session<SessionMySqlPool>,
     auth_session: AuthSession,
-    State(options): State<Arc<LeptosOptions>>,
     req: Request<AxumBody>,
 ) -> Response {
     let handler = leptos_axum::render_app_to_stream_with_context(
         (*options).clone(),
         move |cx| {
+            provide_context(cx, session.clone());
             provide_context(cx, auth_session.clone());
             provide_context(cx, pool.clone());
         },
@@ -80,7 +81,7 @@ async fn main() {
         .await
         .expect("Could not connect to MySQL");
     let session_config = SessionConfig::default().with_table_name("axum_sessions");
-    let auth_config = AuthConfig::<i64>::default();
+    let auth_config = AuthConfig::<i64>::default().with_anonymous_user_id(Some(-1));
     let session_store = SessionStore::<SessionMySqlPool>::new(Some(pool.clone().into()), session_config);
     session_store.initiate().await.unwrap();
 
@@ -100,12 +101,12 @@ async fn main() {
     // build our application with a route
 let app = Router::new()
         .route("/api/*fn_name", get(server_fn_handler).post(server_fn_handler))
-        //.leptos_routes_with_handler(routes, get(leptos_routes_handler) )
-        .leptos_routes(leptos_options.clone(), routes, |cx| view!{cx, <App/>} )
+        .leptos_routes_with_handler(routes, get(leptos_routes_handler) )
+        //.leptos_routes(leptos_options.clone(), routes, |cx| view!{cx, <App/>} )
         .fallback(file_and_error_handler)
-        .layer(AuthSessionLayer::<User, i64, SessionMySqlPool, MySqlPool>::new(Some(pool.clone()))
-                    .with_config(auth_config))
+        .layer(AuthSessionLayer::new(Some(pool.clone())).with_config(auth_config))
         .layer(SessionLayer::new(session_store))
+        .layer(Extension(Arc::new(leptos_options.clone())))
         .layer(Extension(pool));
         //.with_state(leptos_options);
     // run our app with hyper

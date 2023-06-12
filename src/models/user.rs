@@ -29,12 +29,22 @@ pub enum Role {
     Operator,
     Customer,
     Processor,
+    Anonymous,
 }
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::MySqlPool;
         impl User {
+            pub fn anonymous() -> Self {
+                Self {
+                    id: -1,
+                    username: "guest".to_owned(),
+                    password_hash: "".to_owned(),
+                    role: Role::Anonymous,
+                    name: "Guest".to_owned()
+                }
+            }
             pub async fn get(id: i64, pool: &MySqlPool) -> Option<Self> {
                 let user = sqlx::query_as::<_,User>("SELECT * FROM users WHERE id = ?")
                     .bind(id)
