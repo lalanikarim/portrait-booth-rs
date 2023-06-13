@@ -34,11 +34,12 @@ anyhow = "1.0.71"
 dummy-macros = { version = "0.1.0", path = "./dummy-macros", optional = true }
 axum_session = { version = "0.2.3", default-features = false, features = ["mysql-rustls", "sqlx"], optional = true }
 axum_session_auth = { version = "0.2.1", default-features = false, features = ["mysql-rustls"], optional = true }
+bcrypt = { version = "0.14.0", optional = true }
 
 [features]
 default = ["ssr"]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate", "dep:dummy-macros"]
-ssr = ["dep:axum", "dep:tokio", "dep:tower", "dep:tower-http", "dep:leptos_axum", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:tracing", "dep:rand", "dep:sqlx", "dep:axum_session","dep:axum_session_auth"]
+ssr = ["dep:axum", "dep:tokio", "dep:tower", "dep:tower-http", "dep:leptos_axum", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:tracing", "dep:rand", "dep:sqlx", "dep:axum_session", "dep:axum_session_auth", "dep:bcrypt"]
 
 [package.metadata.cargo-all-features]
 denylist = [
