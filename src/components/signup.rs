@@ -1,4 +1,4 @@
-use crate::{models::user::Role, validate_password};
+use crate::models::user::Role;
 use leptos::{ev::SubmitEvent, html::Input, *};
 use leptos_router::use_navigate;
 use serde::{Deserialize, Serialize};
@@ -6,39 +6,91 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub enum SignupResponse {
     Success,
-    UserNameUnavailable,
+    EmailAlreadyUsed,
+    PhoneAlreadyUsed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignupForm {
-    pub username: String,
-    pub password: String,
     pub fullname: String,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub password: String,
+}
+fn validate_password(password: String, confirm_password: String) -> Result<(), Vec<String>> {
+    let mut error: Vec<String> = Vec::new();
+    if password != confirm_password {
+        error.push("Passwords don't match.".into());
+    }
+    if password.len() < 8 {
+        error.push("Must contain at least 8 characters.".into());
+    }
+    if password.find(|c: char| c.is_lowercase()).is_none() {
+        error.push("Must contain at least one lowercase letter.".into());
+    }
+    if password.find(|c: char| c.is_uppercase()).is_none() {
+        error.push("Must contain at least one uppercase letter.".into());
+    }
+    if password.find(|c: char| c.is_numeric()).is_none() {
+        error.push("Must contain at least one number.".into());
+    }
+    if password.find(|c: char| "!@#$%^&*".contains(c)).is_none() {
+        error.push("Must contain at least one symbol: !@#$%^&*".into());
+    }
+    if error.len() == 0 {
+        Ok(())
+    } else {
+        Err(error)
+    }
+}
+
+fn validate_email(email: String) -> Result<Option<String>, Vec<String>> {
+    todo!()
+}
+
+fn validate_phone(phone: String) -> Result<Option<String>, Vec<String>> {
+    todo!()
 }
 
 #[server(SignupRequest, "/api")]
 pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupResponse, ServerFnError> {
     use crate::pool;
     let pool = pool(cx)?;
-    match sqlx::query_scalar("SELECT COUNT(1) FROM `users` where trim(lower(username)) = ?")
-        .bind(&form.username)
-        .fetch_one(&pool)
-        .await
-    {
-        Ok(1) => {
-            return Ok(SignupResponse::UserNameUnavailable);
-        }
-        Err(e) => {
-            return Err(ServerFnError::ServerError(e.to_string()));
-        }
-        _ => (),
-    };
+    if form.email.is_some() {
+        match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where email = ?", form.email)
+            .fetch_one(&pool)
+            .await
+        {
+            Ok(1) => {
+                return Ok(SignupResponse::EmailAlreadyUsed);
+            }
+            Err(e) => {
+                return Err(ServerFnError::ServerError(e.to_string()));
+            }
+            _ => (),
+        };
+    }
+    if form.phone.is_some() {
+        match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where phone = ?", form.phone)
+            .fetch_one(&pool)
+            .await
+        {
+            Ok(1) => {
+                return Ok(SignupResponse::PhoneAlreadyUsed);
+            }
+            Err(e) => {
+                return Err(ServerFnError::ServerError(e.to_string()));
+            }
+            _ => (),
+        };
+    }
     let password_hash = bcrypt::hash(form.password.clone(), 12).unwrap();
 
     sqlx::query!(
-        "INSERT INTO users (name, username, password_hash, role) values (?, ?, ?, ?)",
+        "INSERT INTO users (name, email, phone, password_hash, role) values (?, ?, ?, ?, ?)",
         form.fullname,
-        form.username,
+        form.email,
+        form.phone,
         password_hash,
         Role::Anonymous
     )
@@ -51,7 +103,8 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
 pub fn signup(cx: Scope) -> impl IntoView {
     let (errors, set_errors) = create_signal::<Vec<String>>(cx, Vec::new());
     let fullname_input = create_node_ref::<Input>(cx);
-    let username_input = create_node_ref::<Input>(cx);
+    let email_input = create_node_ref::<Input>(cx);
+    let phone_input = create_node_ref::<Input>(cx);
     let password_input = create_node_ref::<Input>(cx);
     let confirm_password_input = create_node_ref::<Input>(cx);
     let error_items = move || errors.get().join(" ");
@@ -69,8 +122,11 @@ pub fn signup(cx: Scope) -> impl IntoView {
                         SignupResponse::Success => {
                             _ = navigate("/", Default::default());
                         }
-                        SignupResponse::UserNameUnavailable => {
-                            set_errors.update(|err| err.push("Username not available".into()));
+                        SignupResponse::EmailAlreadyUsed => {
+                            set_errors.update(|err| err.push("Email already registered".into()));
+                        }
+                        SignupResponse::PhoneAlreadyUsed => {
+                            set_errors.update(|err| err.push("Phone already registered".into()));
                         }
                     };
                 }
@@ -85,7 +141,11 @@ pub fn signup(cx: Scope) -> impl IntoView {
             .get()
             .expect("fullname input should exist")
             .value();
-        let username = username_input
+        let email = email_input
+            .get()
+            .expect("username input should exist")
+            .value();
+        let phone = phone_input
             .get()
             .expect("username input should exist")
             .value();
@@ -100,9 +160,12 @@ pub fn signup(cx: Scope) -> impl IntoView {
         if let Err(password_error) = validate_password(password.clone(), confirm_password.clone()) {
             set_errors.update(move |err| err.extend_from_slice(&password_error));
         } else {
+            let email = if email.len() > 0 { Some(email) } else { None };
+            let phone = if phone.len() > 0 { Some(phone) } else { None };
             let form = SignupForm {
                 fullname,
-                username,
+                email,
+                phone,
                 password,
             };
             signup_action.dispatch(form);
@@ -123,15 +186,27 @@ pub fn signup(cx: Scope) -> impl IntoView {
                             disabled=disable_controls
                             node_ref=fullname_input
                             max-length="25"
+                            required
                         />
                     </div>
                     <div class="flex flex-col">
-                        <label for="username">"Username"</label>
+                        <label for="email">"Email"</label>
                         <input
-                            id="username"
+                            id="email"
+                            type="email"
+                            disabled=disable_controls
+                            node_ref=email_input
+                            required
+                            max-length="25"
+                        />
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="phone">"Phone"</label>
+                        <input
+                            id="phone"
                             type="text"
                             disabled=disable_controls
-                            node_ref=username_input
+                            node_ref=phone_input
                             max-length="25"
                         />
                     </div>
@@ -142,6 +217,7 @@ pub fn signup(cx: Scope) -> impl IntoView {
                             type="password"
                             disabled=disable_controls
                             node_ref=password_input
+                            required
                             max-length="25"
                         />
                     </div>
@@ -152,6 +228,7 @@ pub fn signup(cx: Scope) -> impl IntoView {
                             type="password"
                             disabled=disable_controls
                             node_ref=confirm_password_input
+                            required
                             max-length="25"
                         />
                         <div class="hint">

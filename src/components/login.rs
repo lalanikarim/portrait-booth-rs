@@ -2,7 +2,7 @@ use leptos::{ev::SubmitEvent, html::Input, *};
 use leptos_router::use_navigate;
 use serde::{Deserialize, Serialize};
 
-use crate::models::user::User;
+use crate::models::user::{User, UserStatus};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginForm {
@@ -26,23 +26,27 @@ async fn login_request(
 ) -> Result<LoginResponse, ServerFnError> {
     let auth = crate::auth::auth(cx).expect("Auth must be present");
     let pool = crate::pool(cx).expect("MySQL pool must be present");
-    let response = match username.as_str() {
-        "lock" => LoginResponse::LockedOut,
-        "inactive" => LoginResponse::NotActivated,
-        _ => match User::get_by_username(username, &pool).await {
-            None => LoginResponse::InvalidCredentials,
-            Some(user) => match bcrypt::verify(password, &user.password_hash).ok() {
-                Some(is_match) => {
-                    if is_match {
+    let response = match User::get_by_username(username, &pool).await {
+        None => LoginResponse::InvalidCredentials,
+        Some(user) => {
+            if let Some(true) = bcrypt::verify(
+                password,
+                &user.clone().password_hash.unwrap_or("".to_string()),
+            )
+            .ok()
+            {
+                match user.status {
+                    UserStatus::Disabled => LoginResponse::LockedOut,
+                    UserStatus::NotActivatedYet => LoginResponse::NotActivated,
+                    UserStatus::Active => {
                         auth.login_user(user.id);
                         LoginResponse::LoggedIn(user)
-                    } else {
-                        LoginResponse::InvalidCredentials
                     }
                 }
-                None => LoginResponse::InvalidCredentials,
-            },
-        },
+            } else {
+                LoginResponse::InvalidCredentials
+            }
+        }
     };
     Ok(response)
 }
@@ -109,7 +113,7 @@ pub fn Login(cx: Scope) -> impl IntoView {
             <form on:submit=on_submit>
                 <div class="flex flex-col text-left">
                     <div class="flex flex-col">
-                        <label for="username">"Username"</label>
+                        <label for="username">"Username (email or phone)"</label>
                         <input
                             id="username"
                             type="text"

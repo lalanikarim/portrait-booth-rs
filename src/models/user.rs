@@ -6,6 +6,12 @@ impl Default for Role {
     }
 }
 
+impl Default for UserStatus {
+    fn default() -> Self {
+        UserStatus::NotActivatedYet
+    }
+}
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::{FromRow, Type};
@@ -17,10 +23,12 @@ cfg_if::cfg_if! {
 #[derive(Debug, Clone, Serialize, Deserialize, Default, FromRow)]
 pub struct User {
     pub id: i64,
-    pub username: String,
+    pub email: Option<String>,
+    pub phone: Option<String>,
     #[serde(skip)]
-    pub password_hash: String,
+    pub password_hash: Option<String>,
     pub role: Role,
+    pub status: UserStatus,
     pub name: String,
 }
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, Type)]
@@ -33,6 +41,14 @@ pub enum Role {
     Anonymous = 0,
 }
 
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, Type)]
+#[repr(i32)]
+pub enum UserStatus {
+    Active = 1,
+    NotActivatedYet = 0,
+    Disabled = 2,
+}
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::MySqlPool;
@@ -40,14 +56,16 @@ cfg_if::cfg_if! {
             pub fn anonymous() -> Self {
                 Self {
                     id: -1,
-                    username: "guest".to_owned(),
-                    password_hash: "".to_owned(),
+                    email: None,
+                    phone: None,
+                    password_hash: None,
                     role: Role::Anonymous,
+                    status: UserStatus::Disabled,
                     name: "Guest".to_owned()
                 }
             }
             pub async fn get_by_username(username: String, pool: &MySqlPool) -> Option<Self> {
-                let user = sqlx::query_as::<_,User>("SELECT * FROM users WHERE username = ?")
+                let user = sqlx::query_as::<_,User>("SELECT * FROM users WHERE ? in (email,phone)")
                     .bind(username)
                     .fetch_one(pool)
                     .await
@@ -63,9 +81,10 @@ cfg_if::cfg_if! {
                 Some(user)
             }
 
-            pub async fn create(username: String, password: String, name: String, role: Role, pool: &MySqlPool) -> Result<u64, sqlx::Error> {
-                sqlx::query("INSERT INTO users (username, password,name,role) values (?,?,?,?)")
-                    .bind(username)
+            pub async fn create(email: Option<String>,phone: Option<String>, password: String, name: String, role: Role, pool: &MySqlPool) -> Result<u64, sqlx::Error> {
+                sqlx::query("INSERT INTO users (email,phone,password,name,role) values (?,?,?,?,?)")
+                    .bind(email)
+                    .bind(phone)
                     .bind(password)
                     .bind(name)
                     .bind(role)
