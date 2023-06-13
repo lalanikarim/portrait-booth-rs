@@ -21,6 +21,9 @@ cfg_if! { if #[cfg(feature = "hydrate")] {
 }}
 cfg_if! {
     if #[cfg(feature = "ssr")] {
+        #[macro_use]
+        extern crate dotenv_codegen;
+
         pub mod auth;
 
 use sqlx::MySqlPool;
@@ -29,5 +32,9 @@ pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
         .ok_or("db pool missing")
         .map_err(|e| leptos::ServerFnError::ServerError(e.to_string()))
 }
+pub fn get_totp_duration() -> u64 {
+            let dur = dotenv!("TOTP_DURATION");
+            dur.parse().expect("TOTP_DURATION should be set")
+        }
     }
 }

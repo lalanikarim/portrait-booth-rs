@@ -27,6 +27,8 @@ pub struct User {
     pub phone: Option<String>,
     #[serde(skip)]
     pub password_hash: Option<String>,
+    #[serde(skip)]
+    pub otp_secret: Option<String>,
     pub role: Role,
     pub status: UserStatus,
     pub name: String,
@@ -59,6 +61,7 @@ cfg_if::cfg_if! {
                     email: None,
                     phone: None,
                     password_hash: None,
+                    otp_secret: None,
                     role: Role::Anonymous,
                     status: UserStatus::Disabled,
                     name: "Guest".to_owned()

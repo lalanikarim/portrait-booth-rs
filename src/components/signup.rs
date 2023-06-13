@@ -55,6 +55,8 @@ fn validate_phone(phone: String) -> Result<Option<String>, Vec<String>> {
 #[server(SignupRequest, "/api")]
 pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupResponse, ServerFnError> {
     use crate::pool;
+    use otp_rs::TOTP;
+
     let pool = pool(cx)?;
     if form.email.is_some() {
         match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where email = ?", form.email)
@@ -86,12 +88,17 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
     }
     let password_hash = bcrypt::hash(form.password.clone(), 12).unwrap();
 
+    let secret: Vec<u8> = (0..128).map(|_| rand::random::<u8>()).collect();
+    use base64::Engine;
+    let otp_secret = base64::engine::general_purpose::STANDARD_NO_PAD.encode(secret);
+
     sqlx::query!(
-        "INSERT INTO users (name, email, phone, password_hash, role) values (?, ?, ?, ?, ?)",
+        "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)",
         form.fullname,
         form.email,
         form.phone,
         password_hash,
+        otp_secret,
         Role::Anonymous
     )
     .execute(&pool)

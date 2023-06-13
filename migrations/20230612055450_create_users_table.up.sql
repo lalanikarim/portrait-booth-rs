@@ -5,6 +5,7 @@ CREATE TABLE `users` (
   email varchar(255) null,
   phone varchar(255) null,
   password_hash varchar(255) null,
+  otp_secret varchar(255) null,
   role int not null,
   status int not null default 0,
   primary key (id),

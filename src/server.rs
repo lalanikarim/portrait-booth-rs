@@ -10,7 +10,12 @@ use leptos_axum::{generate_route_list, LeptosRoutes};
 use portrait_booth::{
     auth::AuthSessionLayer,
     components::{
-        app::*, home_page::HomePageRequest, login::*, logout::LogoutRequest, signup::SignupRequest,
+        app::*,
+        home_page::HomePageRequest,
+        login::*,
+        login_otp::{LoginOtpRequest, LoginOtpVerifyRequest},
+        logout::LogoutRequest,
+        signup::SignupRequest,
     },
     fileserv::file_and_error_handler,
 };
@@ -46,6 +51,8 @@ pub async fn server_main() {
     let routes = generate_route_list(|cx| view! { cx, <App/> }).await;
 
     _ = LoginRequest::register();
+    _ = LoginOtpRequest::register();
+    _ = LoginOtpVerifyRequest::register();
     _ = SignupRequest::register();
     _ = HomePageRequest::register();
     _ = LogoutRequest::register();
