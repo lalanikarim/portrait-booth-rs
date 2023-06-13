@@ -35,28 +35,25 @@ pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
 pub fn validate_username(username: &str) -> Result<(), String> {
     todo!();
 }
-pub fn validate_password(
-    password: String,
-    confirm_password: String,
-) -> Result<(), Vec<&'static str>> {
-    let mut error: Vec<&str> = Vec::new();
+pub fn validate_password(password: String, confirm_password: String) -> Result<(), Vec<String>> {
+    let mut error: Vec<String> = Vec::new();
     if password != confirm_password {
-        error.push("Passwords don't match.");
+        error.push("Passwords don't match.".into());
     }
     if password.len() < 8 {
-        error.push("Must contain at least 8 characters.");
+        error.push("Must contain at least 8 characters.".into());
     }
     if password.find(|c: char| c.is_lowercase()).is_none() {
-        error.push("Must contain at least one lowercase letter.");
+        error.push("Must contain at least one lowercase letter.".into());
     }
     if password.find(|c: char| c.is_uppercase()).is_none() {
-        error.push("Must contain at least one uppercase letter.");
+        error.push("Must contain at least one uppercase letter.".into());
     }
     if password.find(|c: char| c.is_numeric()).is_none() {
-        error.push("Must contain at least one number.");
+        error.push("Must contain at least one number.".into());
     }
     if password.find(|c: char| "!@#$%^&*".contains(c)).is_none() {
-        error.push("Must contain at least one symbol: !@#$%^&*");
+        error.push("Must contain at least one symbol: !@#$%^&*".into());
     }
     if error.len() == 0 {
         Ok(())

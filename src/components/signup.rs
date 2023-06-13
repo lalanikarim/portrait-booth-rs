@@ -1,5 +1,6 @@
 use crate::{models::user::Role, validate_password};
 use leptos::{ev::SubmitEvent, html::Input, *};
+use leptos_router::{use_navigate, use_router, RedirectProps};
 use serde::{Deserialize, Serialize};
 use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
@@ -33,21 +34,23 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
         }
         _ => (),
     };
-    let password_hash = bcrypt::hash(form.password, 12).unwrap();
+    let password_hash = bcrypt::hash(form.password.clone(), 12).unwrap();
 
-    sqlx::query("INSERT INTO `users` (name, username,password_hash,role) values (?,?,?,?,?)")
-        .bind(form.fullname)
-        .bind(form.username)
-        .bind(password_hash)
-        .bind(Role::Anonymous)
-        .execute(&pool)
-        .await
-        .map(|_| SignupResponse::Success)
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+    sqlx::query!(
+        "INSERT INTO users (name, username, password_hash, role) values (?, ?, ?, ?)",
+        form.fullname,
+        form.username,
+        password_hash,
+        Role::Anonymous
+    )
+    .execute(&pool)
+    .await
+    .map(|_| SignupResponse::Success)
+    .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 #[component]
 pub fn signup(cx: Scope) -> impl IntoView {
-    let (errors, set_errors) = create_signal::<Vec<&str>>(cx, Vec::new());
+    let (errors, set_errors) = create_signal::<Vec<String>>(cx, Vec::new());
     let fullname_input = create_node_ref::<Input>(cx);
     let username_input = create_node_ref::<Input>(cx);
     let password_input = create_node_ref::<Input>(cx);
@@ -75,6 +78,30 @@ pub fn signup(cx: Scope) -> impl IntoView {
         if let Err(password_error) = validate_password(password.clone(), confirm_password.clone()) {
             set_errors.update(move |err| err.extend_from_slice(&password_error));
         } else {
+            let form = SignupForm {
+                fullname,
+                username,
+                password,
+            };
+            spawn_local(async move {
+                let navigate = use_navigate(cx);
+                match signup_request(cx, form).await {
+                    Err(e) => {
+                        let err_str = e.to_string();
+                        set_errors.update(|err| err.push(err_str));
+                    }
+                    Ok(result) => {
+                        match result {
+                            SignupResponse::Success => {
+                                _ = navigate("/", Default::default());
+                            }
+                            SignupResponse::UserNameUnavailable => {
+                                set_errors.update(|err| err.push("Username not available".into()));
+                            }
+                        };
+                    }
+                }
+            });
         }
     };
     view! {

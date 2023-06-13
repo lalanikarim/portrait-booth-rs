@@ -9,7 +9,7 @@ use leptos::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use portrait_booth::{
     auth::AuthSessionLayer,
-    components::{app::*, login::*},
+    components::{app::*, login::*, signup::SignupRequest},
     fileserv::file_and_error_handler,
 };
 use sqlx::mysql::MySqlPoolOptions;
@@ -44,6 +44,7 @@ pub async fn server_main() {
     let routes = generate_route_list(|cx| view! { cx, <App/> }).await;
 
     _ = LoginRequest::register();
+    _ = SignupRequest::register();
 
     // build our application with a route
     let app = Router::new()

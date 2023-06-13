@@ -24,12 +24,13 @@ pub struct User {
     pub name: String,
 }
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, Type)]
+#[repr(i32)]
 pub enum Role {
-    Manager,
-    Operator,
-    Customer,
-    Processor,
-    Anonymous,
+    Manager = 4,
+    Operator = 2,
+    Customer = 1,
+    Processor = 3,
+    Anonymous = 0,
 }
 
 cfg_if::cfg_if! {
