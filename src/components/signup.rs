@@ -1,8 +1,7 @@
 use crate::{models::user::Role, validate_password};
 use leptos::{ev::SubmitEvent, html::Input, *};
-use leptos_router::{use_navigate, use_router, RedirectProps};
+use leptos_router::use_navigate;
 use serde::{Deserialize, Serialize};
-use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
 #[derive(Serialize, Deserialize)]
 pub enum SignupResponse {
