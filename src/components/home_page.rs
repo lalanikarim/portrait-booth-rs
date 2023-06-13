@@ -1,6 +1,5 @@
 use leptos::*;
 
-use crate::components::login::Login;
 /// Renders the home page of your application.
 #[component]
 pub fn HomePage(cx: Scope) -> impl IntoView {
@@ -11,6 +10,5 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
     view! { cx,
         <h1>"Portrait Booth"</h1>
         <button class="bg-red-300 p-2 rounded mx-20 hover:bg-red-600 hover:text-white" on:click=on_click>"Click Me: " {count}</button>
-        <Login />
     }
 }

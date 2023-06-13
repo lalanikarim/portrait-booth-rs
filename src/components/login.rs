@@ -1,4 +1,5 @@
 use leptos::{ev::SubmitEvent, html::Input, *};
+use leptos_router::use_navigate;
 use serde::{Deserialize, Serialize};
 
 use crate::models::user::User;
@@ -17,21 +18,25 @@ async fn login_request(
     username: String,
     password: String,
 ) -> Result<LoginResponse, ServerFnError> {
-    //use crate::auth::auth;
-    log!("Login Request");
-    let auth = crate::auth::auth(cx);
-    log!("{:?}", auth);
+    let auth = crate::auth::auth(cx).expect("Auth must be present");
+    let pool = crate::pool(cx).expect("MySQL pool must be present");
     let response = match username.as_str() {
         "lock" => LoginResponse::LockedOut,
         "inactive" => LoginResponse::NotActivated,
-        _ => {
-            if username == password {
-                //auth.login(&User::default()).await.unwrap();
-                LoginResponse::LoggedIn(User::default())
-            } else {
-                LoginResponse::InvalidCredentials
-            }
-        }
+        _ => match User::get_by_username(username, &pool).await {
+            None => LoginResponse::InvalidCredentials,
+            Some(user) => match bcrypt::verify(password, &user.password_hash).ok() {
+                Some(is_match) => {
+                    if is_match {
+                        auth.login_user(user.id);
+                        LoginResponse::LoggedIn(user)
+                    } else {
+                        LoginResponse::InvalidCredentials
+                    }
+                }
+                None => LoginResponse::InvalidCredentials,
+            },
+        },
     };
     Ok(response)
 }
@@ -58,6 +63,8 @@ pub fn Login(cx: Scope) -> impl IntoView {
             let login_err = match response {
                 LoginResponse::LoggedIn(_) => {
                     log!("Login successful");
+                    let navigate = use_navigate(cx);
+                    _ = navigate("/", Default::default());
                     ""
                 }
                 LoginResponse::InvalidCredentials => {

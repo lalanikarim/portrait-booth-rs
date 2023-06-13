@@ -46,6 +46,14 @@ cfg_if::cfg_if! {
                     name: "Guest".to_owned()
                 }
             }
+            pub async fn get_by_username(username: String, pool: &MySqlPool) -> Option<Self> {
+                let user = sqlx::query_as::<_,User>("SELECT * FROM users WHERE username = ?")
+                    .bind(username)
+                    .fetch_one(pool)
+                    .await
+                    .ok()?;
+                Some(user)
+            }
             pub async fn get(id: i64, pool: &MySqlPool) -> Option<Self> {
                 let user = sqlx::query_as::<_,User>("SELECT * FROM users WHERE id = ?")
                     .bind(id)
