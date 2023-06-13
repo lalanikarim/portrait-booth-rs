@@ -55,6 +55,29 @@ pub fn signup(cx: Scope) -> impl IntoView {
     let password_input = create_node_ref::<Input>(cx);
     let confirm_password_input = create_node_ref::<Input>(cx);
     let error_items = move || errors.get().join(" ");
+    let signup_action_fn = move |form: &SignupForm| {
+        let form = form.clone();
+        async move {
+            let navigate = use_navigate(cx);
+            match signup_request(cx, form).await {
+                Err(e) => {
+                    let err_str = e.to_string();
+                    set_errors.update(|err| err.push(err_str));
+                }
+                Ok(result) => {
+                    match result {
+                        SignupResponse::Success => {
+                            _ = navigate("/", Default::default());
+                        }
+                        SignupResponse::UserNameUnavailable => {
+                            set_errors.update(|err| err.push("Username not available".into()));
+                        }
+                    };
+                }
+            }
+        }
+    };
+    let signup_action = create_action(cx, signup_action_fn);
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
         set_errors.update(|err| err.clear());
@@ -82,55 +105,82 @@ pub fn signup(cx: Scope) -> impl IntoView {
                 username,
                 password,
             };
-            spawn_local(async move {
-                let navigate = use_navigate(cx);
-                match signup_request(cx, form).await {
-                    Err(e) => {
-                        let err_str = e.to_string();
-                        set_errors.update(|err| err.push(err_str));
-                    }
-                    Ok(result) => {
-                        match result {
-                            SignupResponse::Success => {
-                                _ = navigate("/", Default::default());
-                            }
-                            SignupResponse::UserNameUnavailable => {
-                                set_errors.update(|err| err.push("Username not available".into()));
-                            }
-                        };
-                    }
-                }
-            });
+            signup_action.dispatch(form);
         }
     };
-    view! {
-        cx,
+    let disable_controls = move || signup_action.pending().get();
+
+    view! { cx,
         <div class="my-0 mx-auto max-w-sm text-center">
             <h2 class="p-6 text-4xl">"Signup"</h2>
             <form on:submit=on_submit>
                 <div class="flex flex-col text-left">
                     <div class="flex flex-col">
                         <label for="fullname">"Full Name"</label>
-                        <input id="fullname" type="text" node_ref=fullname_input max-length="25"></input>
+                        <input
+                            id="fullname"
+                            type="text"
+                            disabled=disable_controls
+                            node_ref=fullname_input
+                            max-length="25"
+                        />
                     </div>
                     <div class="flex flex-col">
                         <label for="username">"Username"</label>
-                        <input id="username" type="text" node_ref=username_input max-length="25"></input>
+                        <input
+                            id="username"
+                            type="text"
+                            disabled=disable_controls
+                            node_ref=username_input
+                            max-length="25"
+                        />
                     </div>
                     <div class="flex flex-col mt-2">
                         <label for="password">"Password"</label>
-                        <input id="password" type="password" node_ref=password_input max-length="25"></input>
+                        <input
+                            id="password"
+                            type="password"
+                            disabled=disable_controls
+                            node_ref=password_input
+                            max-length="25"
+                        />
                     </div>
                     <div class="flex flex-col mt-2">
                         <label for="confirm_password">"Confirm Password"</label>
-                        <input id="confirm_password" type="password" node_ref=confirm_password_input max-length="25"></input>
-                        <div class="hint">"Minimum 8 characters. Include at least one of each: lowercase, uppercase, number, and special characters !@#$%^&*"</div>
+                        <input
+                            id="confirm_password"
+                            type="password"
+                            disabled=disable_controls
+                            node_ref=confirm_password_input
+                            max-length="25"
+                        />
+                        <div class="hint">
+                            "Minimum 8 characters. Include at least one of each: lowercase, uppercase, number, and special characters !@#$%^&*"
+                        </div>
                         <div class="error">{error_items}</div>
                     </div>
-                    <div class="flex flex-row text-center justify-between mt-8">
-                        <button class="w-40" type="submit">"Signup"</button>
-                        <button class="w-40 red" type="reset">"Reset"</button>
-                    </div>
+                    {move || {
+                        if signup_action.pending().get() {
+                            view! { cx,
+                                <div class="text-center mt-8">
+                                    <button class="w-40" disabled>
+                                        "Submitting..."
+                                    </button>
+                                </div>
+                            }
+                        } else {
+                            view! { cx,
+                                <div class="flex flex-row text-center justify-between mt-8">
+                                    <button class="w-40" type="submit">
+                                        "Signup"
+                                    </button>
+                                    <button class="w-40 red" type="reset">
+                                        "Reset"
+                                    </button>
+                                </div>
+                            }
+                        }
+                    }}
                 </div>
             </form>
         </div>

@@ -17,7 +17,9 @@ pub fn Logout(cx: Scope) -> impl IntoView {
             }
         });
     };
-    view! {cx,
-        <button class="red" on:click=on_click>"Logout"</button>
+    view! { cx,
+        <button class="red" on:click=on_click>
+            "Logout"
+        </button>
     }
 }

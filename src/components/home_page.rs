@@ -51,10 +51,15 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
     });
 
     view! { cx,
-
         <h1>"Portrait Booth"</h1>
-        <button class="bg-red-300 p-2 rounded mx-20 hover:bg-red-600 hover:text-white" on:click=on_click>"Click Me: " {count}</button>
-        <div>"Logged in: "{user_name}</div>
+        <button
+            class="bg-red-300 p-2 rounded mx-20 hover:bg-red-600 hover:text-white"
+            on:click=on_click
+        >
+            "Click Me: "
+            {count}
+        </button>
+        <div>"Logged in: " {user_name}</div>
         <Logout/>
     }
 }
