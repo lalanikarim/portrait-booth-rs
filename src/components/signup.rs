@@ -44,6 +44,7 @@ fn validate_password(password: String, confirm_password: String) -> Result<(), V
     }
 }
 
+/*
 fn validate_email(email: String) -> Result<Option<String>, Vec<String>> {
     todo!()
 }
@@ -51,11 +52,13 @@ fn validate_email(email: String) -> Result<Option<String>, Vec<String>> {
 fn validate_phone(phone: String) -> Result<Option<String>, Vec<String>> {
     todo!()
 }
+*/
 
 #[server(SignupRequest, "/api")]
 pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupResponse, ServerFnError> {
     use crate::pool;
-    use otp_rs::TOTP;
+
+    use totp_rs::*;
 
     let pool = pool(cx)?;
     if form.email.is_some() {
@@ -88,9 +91,9 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
     }
     let password_hash = bcrypt::hash(form.password.clone(), 12).unwrap();
 
-    let secret: Vec<u8> = (0..128).map(|_| rand::random::<u8>()).collect();
-    use base64::Engine;
-    let otp_secret = base64::engine::general_purpose::STANDARD_NO_PAD.encode(secret);
+    let Secret::Encoded(otp_secret) = Secret::generate_secret().to_encoded() else {
+        return Err(ServerFnError::ServerError("Unable to generate OTP Secret".into()));
+    };
 
     sqlx::query!(
         "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)",

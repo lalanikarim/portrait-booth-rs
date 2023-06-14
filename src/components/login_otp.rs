@@ -1,21 +1,28 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use leptos::{ev::MouseEvent, html::Input, *};
+use leptos_router::*;
 
 #[server(LoginOtpRequest, "/api")]
 pub async fn login_otp_request(cx: Scope, email: String) -> Result<(), ServerFnError> {
+    use totp_rs::*;
     let pool = crate::pool(cx).expect("Pool should be present");
     let result = sqlx::query_scalar!("SELECT otp_secret FROM users WHERE email = ?", email)
         .fetch_one(&pool)
         .await;
     if let Ok(Some(otp_secret)) = result {
-        let totp = otp_rs::TOTP::new(otp_secret.as_str());
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
         let totp_dur = crate::get_totp_duration();
-        log!("OTP Code: {:#?}", totp.generate(totp_dur, ts));
+        let totp = TOTP::new(
+            Algorithm::SHA256,
+            6,
+            1,
+            totp_dur,
+            otp_secret.as_bytes().into(),
+        )
+        .expect("Unable to Initialize TOTP");
+        log!(
+            "OTP Code: {:#?}, ttl: {:#?}s",
+            totp.generate_current().expect("Unable to generate OTP"),
+            totp.ttl()
+        );
     }
     Ok(())
 }
@@ -24,7 +31,8 @@ pub async fn login_otp_verify_request(
     cx: Scope,
     email: String,
     otp: String,
-) -> Result<(), ServerFnError> {
+) -> Result<bool, ServerFnError> {
+    use totp_rs::*;
     let pool = crate::pool(cx).expect("Pool should be present");
     let auth = crate::auth::auth(cx).expect("Auth should be present");
     let result =
@@ -33,19 +41,18 @@ pub async fn login_otp_verify_request(
             .fetch_one(&pool)
             .await;
     if let Ok(user) = result {
-        let totp = otp_rs::TOTP::new(user.otp_secret.unwrap_or_default().as_str());
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        let otp: u32 = otp.parse().expect("OTP should parse");
+        let secret = user.clone().otp_secret.unwrap_or_default();
+        let secret = secret.as_bytes();
         let totp_dur = crate::get_totp_duration();
-        if totp.verify(otp, totp_dur, ts) {
+        let totp = TOTP::new(Algorithm::SHA256, 6, 1, totp_dur, secret.into())
+            .expect("Unable to Initialize TOTP");
+        if totp.check_current(otp.as_str()).ok().unwrap_or_default() {
             auth.logout_user();
             auth.login_user(user.id);
+            return Ok(true);
         }
     }
-    Ok(())
+    Ok(false)
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -57,11 +64,27 @@ pub enum LoginOtpState {
 #[component]
 pub fn LoginOtp(cx: Scope) -> impl IntoView {
     let (state, set_state) = create_signal(cx, LoginOtpState::GetEmail);
-    let (error, set_error) = create_signal(cx, "".to_string());
+    let (error, set_error) = create_signal(cx, "");
     let username_input = create_node_ref::<Input>(cx);
     let password_input = create_node_ref::<Input>(cx);
     let login_otp_request_action = create_server_action::<LoginOtpRequest>(cx);
     let login_otp_verify_action = create_server_action::<LoginOtpVerifyRequest>(cx);
+    create_effect(cx, move |_| {
+        log!(
+            "Login OTP Verify Action: {:#?}",
+            if let Some(Ok(login_otp_response)) = login_otp_verify_action.value().get() {
+                match login_otp_response {
+                    true => {
+                        let navigate = use_navigate(cx);
+                        _ = navigate("/", Default::default());
+                    }
+                    false => {
+                        set_error.update(|e| *e = "Invalid Code");
+                    }
+                };
+            }
+        );
+    });
     let disable_controls =
         move || login_otp_request_action.pending().get() || login_otp_verify_action.pending().get();
     let on_click = move |_: MouseEvent| {
@@ -104,7 +127,7 @@ pub fn LoginOtp(cx: Scope) -> impl IntoView {
                                 <label for="password">"OTP Code"</label>
                                 <input
                                     id="password"
-                                    type="password"
+                                    type="text"
                                     disabled=disable_controls
                                     node_ref=password_input
                                     max-length="25"

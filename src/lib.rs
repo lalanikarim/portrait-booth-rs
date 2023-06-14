@@ -34,7 +34,9 @@ pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
 }
 pub fn get_totp_duration() -> u64 {
             let dur = dotenv!("TOTP_DURATION");
-            dur.parse().expect("TOTP_DURATION should be set")
+            let dur = dur.parse().expect("TOTP_DURATION should be set");
+            leptos::log!("TOTP_DURATION: {}s",dur);
+            dur
         }
     }
 }
