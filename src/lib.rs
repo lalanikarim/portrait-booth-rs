@@ -1,5 +1,4 @@
 use cfg_if::cfg_if;
-use leptos::ServerFnError;
 pub mod components;
 //pub mod error_template;
 pub mod fileserv;
@@ -25,6 +24,7 @@ cfg_if! {
         #[macro_use]
         extern crate dotenv_codegen;
 
+        use leptos::*;
         pub mod auth;
 
         use sqlx::MySqlPool;
@@ -45,4 +45,10 @@ cfg_if! {
             ServerFnError::ServerError(e.to_string())
         }
     }
+}
+#[server(GetUnitPrice, "/api")]
+pub async fn get_unit_price(cx: Scope) -> Result<u64, ServerFnError> {
+    dotenv!("PHOTO_UNIT_PRICE")
+        .parse::<u64>()
+        .map_err(|e| crate::to_server_fn_error(e))
 }

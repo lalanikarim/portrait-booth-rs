@@ -1992,6 +1992,7 @@ dependencies = [
  "leptos_router",
  "log",
  "rand",
+ "regex",
  "serde",
  "serde_json",
  "simple_logger",

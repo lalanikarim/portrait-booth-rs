@@ -18,6 +18,7 @@ use portrait_booth::{
         signup::SignupRequest,
     },
     fileserv::file_and_error_handler,
+    GetUnitPrice,
 };
 use sqlx::mysql::MySqlPoolOptions;
 use std::sync::Arc;
@@ -31,7 +32,7 @@ pub async fn server_main() {
         .await
         .expect("Could not connect to MySQL");
     let session_config = SessionConfig::default().with_table_name("axum_sessions");
-    let auth_config = AuthConfig::<i64>::default().with_anonymous_user_id(Some(-1));
+    let auth_config = AuthConfig::<u64>::default().with_anonymous_user_id(Some(0));
     let session_store =
         SessionStore::<SessionMySqlPool>::new(Some(pool.clone().into()), session_config);
     session_store.initiate().await.unwrap();
@@ -56,6 +57,7 @@ pub async fn server_main() {
     _ = SignupRequest::register();
     _ = HomePageRequest::register();
     _ = LogoutRequest::register();
+    _ = GetUnitPrice::register();
 
     // build our application with a route
     let app = Router::new()

@@ -1,4 +1,3 @@
-use crate::models::user::Role;
 use leptos::{ev::SubmitEvent, html::Input, *};
 use leptos_router::use_navigate;
 use serde::{Deserialize, Serialize};
@@ -58,6 +57,7 @@ fn validate_phone(phone: String) -> Result<Option<String>, Vec<String>> {
 pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupResponse, ServerFnError> {
     use crate::pool;
 
+    use crate::models::user::Role;
     use totp_rs::*;
 
     let pool = pool(cx)?;

@@ -8,8 +8,8 @@ use sqlx::MySqlPool;
 
 pub type Session = axum_session::Session<SessionMySqlPool>;
 pub type AuthSessionLayer =
-    axum_session_auth::AuthSessionLayer<User, i64, SessionMySqlPool, MySqlPool>;
-pub type AuthSession = axum_session_auth::AuthSession<User, i64, SessionMySqlPool, MySqlPool>;
+    axum_session_auth::AuthSessionLayer<User, u64, SessionMySqlPool, MySqlPool>;
+pub type AuthSession = axum_session_auth::AuthSession<User, u64, SessionMySqlPool, MySqlPool>;
 pub fn session(cx: Scope) -> Result<Session, ServerFnError> {
     use_context::<Session>(cx)
         .ok_or("session missing")
@@ -22,15 +22,15 @@ pub fn auth(cx: Scope) -> Result<AuthSession, ServerFnError> {
 }
 
 #[async_trait]
-impl Authentication<User, i64, MySqlPool> for User {
-    async fn load_user(userid: i64, pool: Option<&MySqlPool>) -> Result<User, anyhow::Error> {
-        if userid == -1 {
+impl Authentication<User, u64, MySqlPool> for User {
+    async fn load_user(userid: u64, pool: Option<&MySqlPool>) -> Result<User, anyhow::Error> {
+        if userid == 0 {
             Ok(User::anonymous())
         } else {
             let pool = pool.unwrap();
-            User::get(userid, pool)
+            User::get_by_id(userid, pool)
                 .await
-                .ok_or_else(|| anyhow::anyhow!("Cannot get user"))
+                .map_err(|e| anyhow::Error::msg(e.to_string()))
         }
     }
 

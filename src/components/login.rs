@@ -2,7 +2,7 @@ use leptos::{ev::SubmitEvent, html::Input, *};
 use leptos_router::use_navigate;
 use serde::{Deserialize, Serialize};
 
-use crate::models::user::{User, UserStatus};
+use crate::models::user::User;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginForm {
@@ -24,9 +24,10 @@ async fn login_request(
     username: String,
     password: String,
 ) -> Result<LoginResponse, ServerFnError> {
+    use crate::models::user::UserStatus;
     let auth = crate::auth::auth(cx).expect("Auth must be present");
     let pool = crate::pool(cx).expect("MySQL pool must be present");
-    let response = match User::get_by_username(username, &pool).await {
+    let response = match User::get_by_username(username, &pool).await.ok() {
         None => LoginResponse::InvalidCredentials,
         Some(user) => {
             if let Some(true) = bcrypt::verify(
