@@ -36,10 +36,11 @@ pub struct User {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, Type)]
 #[repr(i32)]
 pub enum Role {
-    Manager = 4,
-    Operator = 2,
+    Manager = 5,
+    Operator = 3,
     Customer = 1,
-    Processor = 3,
+    Cashier = 2,
+    Processor = 4,
     Anonymous = 0,
 }
 

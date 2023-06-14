@@ -1,4 +1,5 @@
 use cfg_if::cfg_if;
+use leptos::ServerFnError;
 pub mod components;
 //pub mod error_template;
 pub mod fileserv;
@@ -26,17 +27,22 @@ cfg_if! {
 
         pub mod auth;
 
-use sqlx::MySqlPool;
-pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
-    leptos::use_context::<MySqlPool>(cx)
-        .ok_or("db pool missing")
-        .map_err(|e| leptos::ServerFnError::ServerError(e.to_string()))
-}
-pub fn get_totp_duration() -> u64 {
+        use sqlx::MySqlPool;
+        pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
+            leptos::use_context::<MySqlPool>(cx)
+                .ok_or("db pool missing")
+                .map_err(|e| leptos::ServerFnError::ServerError(e.to_string()))
+        }
+        pub fn get_totp_duration() -> u64 {
             let dur = dotenv!("TOTP_DURATION");
             let dur = dur.parse().expect("TOTP_DURATION should be set");
             leptos::log!("TOTP_DURATION: {}s",dur);
             dur
+        }
+
+        use std::error::Error;
+        pub fn to_server_fn_error(e: impl Error) -> ServerFnError {
+            ServerFnError::ServerError(e.to_string())
         }
     }
 }
