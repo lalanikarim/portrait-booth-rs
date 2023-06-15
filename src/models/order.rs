@@ -108,11 +108,11 @@ impl Order {
     }
 
     pub async fn create(
-        customer_id: i64,
-        no_of_photos: i64,
+        customer_id: u64,
+        no_of_photos: u64,
         pool: &MySqlPool,
     ) -> Result<u64, ServerFnError> {
-        let unit_price: i64 = dotenv!("PHOTO_UNIT_PRICE")
+        let unit_price: u64 = dotenv!("PHOTO_UNIT_PRICE")
             .parse()
             .expect("Unit Price should be a valid number");
         let order_total = no_of_photos * unit_price;
