@@ -19,7 +19,7 @@ pub async fn create_order_request(cx: Scope, no_of_photos: u64) -> Result<bool, 
 }
 
 #[component]
-pub fn CreateOrder(cx: Scope, set_created: WriteSignal<bool>) -> impl IntoView {
+pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
     let (error, set_error) = create_signal(cx, "".to_string());
     let (no_of_pics, set_no_of_pics) = create_signal(cx, 0);
     let (unit_price, set_unit_price) = create_signal(cx, 0);
@@ -41,10 +41,10 @@ pub fn CreateOrder(cx: Scope, set_created: WriteSignal<bool>) -> impl IntoView {
             Ok(_) => {
                 set_no_of_pics.update(|v| *v = 0);
                 set_error.update(|e| *e = "".to_string());
-                set_created.update(|v| *v = true);
             }
             Err(e) => set_error.update(|er| *er = e.to_string()),
-        }
+        };
+        order_created.dispatch(());
     });
     let disable_create = move || create_order_action.pending().get() || no_of_pics.get() == 0;
     let disable_decr = move || no_of_pics.get() == 0;

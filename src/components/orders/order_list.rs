@@ -12,25 +12,26 @@ pub async fn get_orders_request(cx: Scope) -> Result<Vec<Order>, ServerFnError> 
 
 #[component]
 pub fn OrderList(cx: Scope) -> impl IntoView {
-    let (created, set_created) = create_signal(cx, false);
+    let order_created = create_action(cx, |()| async {});
     let get_orders_action = create_server_action::<GetOrdersRequest>(cx);
     get_orders_action.dispatch(GetOrdersRequest {});
-    let (orders, set_orders) = create_signal(cx, Vec::<Order>::new());
-
-    create_effect(cx, move |_| {
-        let Some(Ok(mut result)) = get_orders_action.value().get() else {
+    let orders_resource = create_resource(
+        cx,
+        move || order_created.version().get(),
+        move |_| async move {
+            let Ok(result) = get_orders_request(cx).await else {
             return Vec::new();
         };
-        set_orders.update(|o| {
-            o.clear();
-            o.append(&mut result);
-        });
-        result
-    });
+            result
+        },
+    );
+    let orders = move || orders_resource.read(cx).unwrap_or_default().into_iter();
+
     view! { cx,
         <div class="my-0 mx-auto max-w-sm text-center">
             <h2 class="p-6 text-4xl">"List of Orders"</h2>
-            <CreateOrder set_created/>
+            <CreateOrder order_created />
+            <Suspense fallback=move || view!{cx, <div>"Loading..."</div>}>
             <table class="table-auto w-full">
                 <thead>
                     <tr>
@@ -40,14 +41,15 @@ pub fn OrderList(cx: Scope) -> impl IntoView {
                         <th>"Status"</th>
                     </tr>
                     <For
-                        each=move ||orders.get()
+                        each=orders
                         key=|order| order.id
                         view=move |cx, order| {
-                            view! { cx, <OrderRow order/> }
+                            view! { cx, <OrderRow order=order.to_owned()/> }
                         }
                     />
                 </thead>
             </table>
+        </Suspense>
         </div>
     }
 }
