@@ -39,11 +39,12 @@ base64 = "0.21.2"
 totp-rs = { version = "5.0.2", optional = true, features = ["base64", "gen_secret"] }
 chrono = { version = "0.4.26", features = ["serde"] }
 regex = { version = "1.8.4", optional = true }
+async-stripe = { version = "0.22.2", optional = true, features = ["runtime-tokio-hyper-rustls-webpki"] }
 
 [features]
 default = ["ssr"]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate", "dep:dummy-macros"]
-ssr = ["dep:axum", "dep:tokio", "dep:tower", "dep:tower-http", "dep:leptos_axum", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:tracing", "dep:rand", "dep:sqlx", "dep:axum_session", "dep:axum_session_auth", "dep:bcrypt", "dep:totp-rs", "dep:regex"]
+ssr = ["dep:axum", "dep:tokio", "dep:tower", "dep:tower-http", "dep:leptos_axum", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:tracing", "dep:rand", "dep:sqlx", "dep:axum_session", "dep:axum_session_auth", "dep:bcrypt", "dep:totp-rs", "dep:regex", "dep:async-stripe"]
 
 [package.metadata.cargo-all-features]
 denylist = [

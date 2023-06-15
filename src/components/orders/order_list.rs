@@ -1,6 +1,9 @@
 use leptos::*;
 
-use crate::{components::orders::create_order::CreateOrder, models::order::Order};
+use crate::{
+    components::orders::{create_order::CreateOrder, payment::Payment},
+    models::order::Order,
+};
 
 #[server(GetOrdersRequest, "/api")]
 pub async fn get_orders_request(cx: Scope) -> Result<Vec<Order>, ServerFnError> {

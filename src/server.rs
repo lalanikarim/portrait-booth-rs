@@ -15,7 +15,10 @@ use portrait_booth::{
         login::*,
         login_otp::{LoginOtpRequest, LoginOtpVerifyRequest},
         logout::LogoutRequest,
-        orders::{create_order::CreateOrderRequest, order_list::GetOrdersRequest},
+        orders::{
+            create_order::CreateOrderRequest, order_list::GetOrdersRequest,
+            payment::CreatePaymentLinkRequest,
+        },
         signup::SignupRequest,
     },
     fileserv::file_and_error_handler,
@@ -61,6 +64,7 @@ pub async fn server_main() {
     _ = GetUnitPrice::register();
     _ = CreateOrderRequest::register();
     _ = GetOrdersRequest::register();
+    _ = CreatePaymentLinkRequest::register();
 
     // build our application with a route
     let app = Router::new()
