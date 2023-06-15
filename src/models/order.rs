@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local, NaiveDate};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 cfg_if::cfg_if! {
@@ -24,12 +24,12 @@ pub struct Order {
     pub order_ref: Option<String>,
     pub payment_ref: Option<String>,
     pub status: OrderStatus,
-    pub created_at: DateTime<Local>,
-    pub payment_at: Option<NaiveDate>,
+    pub created_at: NaiveDateTime,
+    pub payment_at: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq, PartialOrd)]
-#[repr(u8)]
+#[repr(i8)]
 pub enum PaymentMode {
     NotSelected = 0,
     Cash = 1,
@@ -37,7 +37,7 @@ pub enum PaymentMode {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq, PartialOrd)]
-#[repr(u8)]
+#[repr(i8)]
 pub enum OrderStatus {
     Created = 0,
     PaymentPending = 1,
@@ -66,10 +66,25 @@ cfg_if::cfg_if! {
         use crate::models::user::User;
         use leptos::ServerFnError;
         use crate::to_server_fn_error;
+        use chrono::Local;
     }
 }
 #[cfg(feature = "ssr")]
 impl Order {
+    pub async fn get_orders_for_customer(
+        customer_id: u64,
+        pool: &MySqlPool,
+    ) -> Result<Vec<Self>, ServerFnError> {
+        let result = sqlx::query_as!(
+            Self,
+            "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where customer_id = ?",
+            customer_id
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| crate::to_server_fn_error(e));
+        result
+    }
     pub async fn get_customer(&self, pool: &MySqlPool) -> Result<User, ServerFnError> {
         User::get_by_id(self.customer_id, pool).await
     }

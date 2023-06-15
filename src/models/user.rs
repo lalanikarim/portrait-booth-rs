@@ -55,6 +55,7 @@ pub enum UserStatus {
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::MySqlPool;
+        use super::order::Order;
     }
 }
 #[cfg(feature = "ssr")]
@@ -109,5 +110,9 @@ impl User {
         .await
         .map(|result| result.last_insert_id())
         .map_err(|e| crate::to_server_fn_error(e))
+    }
+
+    pub async fn orders(&self, pool: &MySqlPool) -> Result<Vec<Order>, ServerFnError> {
+        Order::get_orders_for_customer(self.id, pool).await
     }
 }
