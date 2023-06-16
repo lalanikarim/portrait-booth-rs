@@ -15,10 +15,10 @@ cfg-if = "1"
 # leptos_axum = { version = "0.3.1", optional = true }
 # leptos_meta = { version = "0.3.1", default-features = false, features = ["stable"] }
 # leptos_router = { version = "0.3.1", default-features = false, features = ["stable"] }
-leptos = { git = "https://github.com/leptos-rs/leptos.git", branch = "main", default-features = false, features = ["serde", "stable"] }
-leptos_axum = { git = "https://github.com/leptos-rs/leptos.git", branch = "main", optional = true }
-leptos_meta = { git = "https://github.com/leptos-rs/leptos.git", branch = "main", default-features = false, features = ["stable"] }
-leptos_router = { git = "https://github.com/leptos-rs/leptos.git", branch = "main", default-features = false, features = ["stable"] }
+leptos = { git = "https://github.com/leptos-rs/leptos.git", rev = "18bc03e", default-features = false, features = ["serde", "stable"] }
+leptos_axum = { git = "https://github.com/leptos-rs/leptos.git", rev = "18bc03e", optional = true }
+leptos_meta = { git = "https://github.com/leptos-rs/leptos.git", rev = "18bc03e", default-features = false, features = ["stable"] }
+leptos_router = { git = "https://github.com/leptos-rs/leptos.git", rev = "18bc03e", default-features = false, features = ["stable"] }
 log = "0.4"
 simple_logger = "4"
 tokio = { version = "1.25.0", optional = true }
