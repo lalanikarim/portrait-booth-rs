@@ -45,13 +45,12 @@ pub fn OrderList(cx: Scope) -> impl IntoView {
                                                     <th>"Total"</th>
                                                     <th>"Status"</th>
                                                 </tr>
-                                                <For
-                                                    each=move || orders.clone()
-                                                    key=|order| order.id
-                                                    view=move |cx, order| {
-                                                        view! { cx, <OrderRow order=order.to_owned()/> }
-                                                    }
-                                                />
+                                                {orders
+                                                    .into_iter()
+                                                    .map(move |order| {
+                                                        view! { cx, <OrderRow order/> }
+                                                    })
+                                                    .collect_view(cx)}
                                             </thead>
                                         </table>
                                     }
