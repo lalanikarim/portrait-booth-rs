@@ -74,11 +74,16 @@
 
   div.container {
     @apply
-        my-5 mx-auto max-w-sm text-center shadow-lg rounded-md p-6 bg-white
+        my-5 mx-auto max-w-md text-center shadow-lg rounded-md p-6 bg-white
   }
 
   h2.header {
     @apply
       text-3xl mb-5
+  }
+
+  dialog {
+    @apply
+      max-w-sm w-full text-center shadow-lg rounded-md
   }
 }

@@ -1,4 +1,4 @@
-use leptos::*;
+use leptos::{ev::MouseEvent, *};
 
 use crate::{components::orders::create_order::CreateOrder, models::order::Order};
 
@@ -70,12 +70,19 @@ pub fn OrderList(cx: Scope) -> impl IntoView {
 
 #[component]
 pub fn OrderRow(cx: Scope, order: Order) -> impl IntoView {
+    let set_order = use_context::<WriteSignal<Option<Order>>>(cx)
+        .expect("Set_order write signal should be present");
+    let o = order.clone();
+    let on_click = move |_ev: MouseEvent| {
+        let order = order.clone();
+        set_order.update(|o| *o = Some(order));
+    };
     view! { cx,
         <tr>
-            <td>{order.id}</td>
-            <td>{order.no_of_photos}</td>
-            <td>"$" {order.order_total}</td>
-            <td>{format!("{:?}", order.status)}</td>
+            <td>{o.id}</td>
+            <td>{o.no_of_photos}</td>
+            <td>"$" {o.order_total}</td>
+            <td on:click=on_click>{format!("{:?}", o.status)}</td>
         </tr>
     }
 }

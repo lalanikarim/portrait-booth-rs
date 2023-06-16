@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::{
-        login::Login, login_otp::LoginOtp, logout::Logout, orders::order_list::OrderList,
+        login::Login, login_otp::LoginOtp, logout::Logout, orders::orders_view::OrdersView,
         signup::Signup,
     },
     models::user::User,
@@ -46,7 +46,7 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                     view! { cx,
                         <div>"Logged in: " {user.name}</div>
                         <Logout completed=completed/>
-                        <OrderList />
+                        <OrdersView />
                     }
                         .into_view(cx)
                 }

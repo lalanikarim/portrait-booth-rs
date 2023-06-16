@@ -143,8 +143,30 @@ impl Order {
                     .map(|result| result.last_insert_id())
                     .map_err(|e| to_server_fn_error(e))
     }
+
+    pub async fn get_by_id(id: u64, pool: &MySqlPool) -> Result<Option<Order>, ServerFnError> {
+        sqlx::query_as!(Order, "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where id = ?", id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| to_server_fn_error(e))
+    }
+    pub async fn delete(
+        id: u64,
+        customer_id: u64,
+        pool: &MySqlPool,
+    ) -> Result<bool, ServerFnError> {
+        sqlx::query!(
+            "DELETE FROM `orders` WHERE id = ? and customer_id = ?",
+            id,
+            customer_id
+        )
+        .execute(pool)
+        .await
+        .map(|result| result.rows_affected() > 0)
+        .map_err(|e| to_server_fn_error(e))
+    }
     pub async fn update(
-        id: i64,
+        id: u64,
         no_of_photos: i64,
         pool: &MySqlPool,
     ) -> Result<u64, ServerFnError> {
@@ -163,34 +185,50 @@ impl Order {
         .map(|result| result.last_insert_id())
         .map_err(|e| to_server_fn_error(e))
     }
-
+    pub async fn start_payment_cash(
+        id: u64,
+        customer_id: u64,
+        pool: &MySqlPool,
+    ) -> Result<bool, ServerFnError> {
+        sqlx::query!("UPDATE `orders` SET mode_of_payment = ?, status = ? WHERE id = ? and customer_id = ? and status = ?",
+                    PaymentMode::Cash as i32,
+                    OrderStatus::PaymentPending as i32,
+                    id,
+                    customer_id,
+                    OrderStatus::Created as i32)
+                    .execute(pool)
+                    .await.map(|result| result.rows_affected() > 0)
+                    .map_err(|e| to_server_fn_error(e))
+    }
     pub async fn collect_payment_cash(
         &self,
         cashier_id: i64,
         pool: &MySqlPool,
     ) -> Result<bool, ServerFnError> {
-        sqlx::query!("UPDATE `orders` SET cashier_id = ?, mode_of_payment = ?, status = ? WHERE id = ? and status = ?",
+        sqlx::query!("UPDATE `orders` SET cashier_id = ?,  status = ? WHERE id = ? and status = ? and mode_of_payment = ?",
                     cashier_id,
-                    PaymentMode::Cash as i32,
                     OrderStatus::Paid as i32,
                     self.id,
-                    OrderStatus::Created as i32)
+                    OrderStatus::PaymentPending as i32,
+                    PaymentMode::Cash as i32)
                     .execute(pool)
                     .await.map(|result| result.rows_affected() > 0)
                     .map_err(|e| to_server_fn_error(e))
     }
 
     pub async fn start_payment_stripe(
-        &self,
+        id: u64,
+        customer_id: u64,
         order_ref: String,
         pool: &MySqlPool,
     ) -> Result<bool, ServerFnError> {
-        sqlx::query!("UPDATE `orders` SET mode_of_payment = ?, order_ref = ?, status = ? WHERE id = ? and status = ?",
+        sqlx::query!("UPDATE `orders` SET mode_of_payment = ?, order_ref = ?, status = ? WHERE id = ? and status = ? and customer_id = ?",
                     PaymentMode::Stripe as i32,
                     order_ref,
                     OrderStatus::PaymentPending as i32,
-                    self.id,
-                    OrderStatus::Created as i32)
+                    id,
+                    OrderStatus::Created as i32,
+                    customer_id)
                     .execute(pool)
                     .await.map(|result| result.rows_affected() > 0)
                     .map_err(|e| to_server_fn_error(e))
