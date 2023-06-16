@@ -1,9 +1,6 @@
 use leptos::*;
 
-use crate::{
-    components::{error_template::ErrorTemplate, orders::create_order::CreateOrder},
-    models::order::Order,
-};
+use crate::{components::orders::create_order::CreateOrder, models::order::Order};
 
 #[server(GetOrdersRequest, "/api")]
 pub async fn get_orders_request(cx: Scope) -> Result<Vec<Order>, ServerFnError> {
@@ -22,54 +19,51 @@ pub fn OrderList(cx: Scope) -> impl IntoView {
         move |_| async move { get_orders_request(cx).await },
     );
 
+    let orders_loading = move || {
+        view! { cx, <div>{if orders_resource.loading().get() { "Loading..." } else { "" }}</div> }
+    };
+
     view! { cx,
         <CreateOrder order_created/>
         <div class="container">
             <h2 class="header">"List of Orders"</h2>
-            <Transition fallback=move || {
-                view! { cx, <div>"Loading..."</div> }
-            }>
-                <ErrorBoundary fallback=|cx, errors| {
-                    view! { cx, <ErrorTemplate errors=errors/> }
-                }>
-                    {move || {
-                        orders_resource
-                            .read(cx)
-                            .map(|orders| match orders {
-                                Err(_) => {
-                                    view! { cx, <div class="error">"Error fetching orders"</div> }
-                                        .into_view(cx)
+            {orders_loading}
+            {move || {
+                orders_resource
+                    .read(cx)
+                    .map(|orders| match orders {
+                        Err(_) => {
+                            view! { cx, <div class="error">"Error fetching orders"</div> }
+                                .into_view(cx)
+                        }
+                        Ok(orders) => {
+                            if orders.is_empty() {
+                                view! { cx, <div>"No orders found"</div> }
+                                    .into_view(cx)
+                            } else {
+                                view! { cx,
+                                    <table class="table-auto w-full">
+                                        <thead>
+                                            <tr>
+                                                <th>"Order Id"</th>
+                                                <th>"No of Photos"</th>
+                                                <th>"Total"</th>
+                                                <th>"Status"</th>
+                                            </tr>
+                                            {orders
+                                                .into_iter()
+                                                .map(move |order| {
+                                                    view! { cx, <OrderRow order/> }
+                                                })
+                                                .collect_view(cx)}
+                                        </thead>
+                                    </table>
                                 }
-                                Ok(orders) => {
-                                    if orders.is_empty() {
-                                        view! { cx, <div>"No orders found"</div> }
-                                            .into_view(cx)
-                                    } else {
-                                        view! { cx,
-                                            <table class="table-auto w-full">
-                                                <thead>
-                                                    <tr>
-                                                        <th>"Order Id"</th>
-                                                        <th>"No of Photos"</th>
-                                                        <th>"Total"</th>
-                                                        <th>"Status"</th>
-                                                    </tr>
-                                                    {orders
-                                                        .into_iter()
-                                                        .map(move |order| {
-                                                            view! { cx, <OrderRow order/> }
-                                                        })
-                                                        .collect_view(cx)}
-                                                </thead>
-                                            </table>
-                                        }
-                                            .into_view(cx)
-                                    }
-                                }
-                            })
-                    }}
-                </ErrorBoundary>
-            </Transition>
+                                    .into_view(cx)
+                            }
+                        }
+                    })
+            }}
         </div>
     }
 }
