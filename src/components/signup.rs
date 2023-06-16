@@ -110,7 +110,7 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
     .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 #[component]
-pub fn signup(cx: Scope) -> impl IntoView {
+pub fn signup(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> impl IntoView {
     let (errors, set_errors) = create_signal::<Vec<String>>(cx, Vec::new());
     let fullname_input = create_node_ref::<Input>(cx);
     let email_input = create_node_ref::<Input>(cx);
@@ -131,6 +131,9 @@ pub fn signup(cx: Scope) -> impl IntoView {
                     match result {
                         SignupResponse::Success => {
                             _ = navigate("/", Default::default());
+                            if let Some(completed) = completed {
+                                completed.dispatch(());
+                            }
                         }
                         SignupResponse::EmailAlreadyUsed => {
                             set_errors.update(|err| err.push("Email already registered".into()));
@@ -184,8 +187,8 @@ pub fn signup(cx: Scope) -> impl IntoView {
     let disable_controls = move || signup_action.pending().get();
 
     view! { cx,
-        <div class="my-0 mx-auto max-w-sm text-center">
-            <h2 class="p-6 text-4xl">"Signup"</h2>
+        <div class="container">
+            <h2 class="header">"Signup"</h2>
             <form on:submit=on_submit>
                 <div class="flex flex-col text-left">
                     <div class="flex flex-col">

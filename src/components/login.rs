@@ -53,7 +53,7 @@ async fn login_request(
 }
 
 #[component]
-pub fn Login(cx: Scope) -> impl IntoView {
+pub fn Login(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> impl IntoView {
     let (error, set_error) = create_signal(cx, "");
     let username_input: NodeRef<Input> = create_node_ref(cx);
     let password_input: NodeRef<Input> = create_node_ref(cx);
@@ -69,6 +69,9 @@ pub fn Login(cx: Scope) -> impl IntoView {
                     log!("Login successful");
                     let navigate = use_navigate(cx);
                     _ = navigate("/", Default::default());
+                    if let Some(completed) = completed {
+                        completed.dispatch(());
+                    }
                     ""
                 }
                 LoginResponse::InvalidCredentials => {
@@ -109,12 +112,12 @@ pub fn Login(cx: Scope) -> impl IntoView {
     };
     let disable_control = move || login_action.pending().get();
     view! { cx,
-        <div class="my-0 mx-auto max-w-sm text-center">
-            <h2 class="p-6 text-4xl">"Login"</h2>
+        <div class="container">
+            <h2 class="header">"Login"</h2>
             <form on:submit=on_submit>
                 <div class="flex flex-col text-left">
                     <div class="flex flex-col">
-                        <label for="username">"Username (email or phone)"</label>
+                        <label for="username">"Email"</label>
                         <input
                             id="username"
                             type="text"

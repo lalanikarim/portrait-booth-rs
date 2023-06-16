@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  body {
+    @apply
+      bg-slate-50
+  }
   input {
     @apply 
       border-b
@@ -66,5 +70,15 @@
   .hint {
     @apply 
       text-green-700 text-center
+  }
+
+  div.container {
+    @apply
+        my-5 mx-auto max-w-sm text-center shadow-lg rounded-md p-6 bg-white
+  }
+
+  h2.header {
+    @apply
+      text-3xl mb-5
   }
 }

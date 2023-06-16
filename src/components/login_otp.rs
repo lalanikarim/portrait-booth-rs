@@ -1,4 +1,4 @@
-use leptos::{ev::MouseEvent, html::Input, *};
+use leptos::{ev::SubmitEvent, html::Input, *};
 use leptos_router::*;
 
 #[server(LoginOtpRequest, "/api")]
@@ -62,32 +62,38 @@ pub enum LoginOtpState {
 }
 
 #[component]
-pub fn LoginOtp(cx: Scope) -> impl IntoView {
+pub fn LoginOtp(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> impl IntoView {
     let (state, set_state) = create_signal(cx, LoginOtpState::GetEmail);
-    let (error, set_error) = create_signal(cx, "");
     let username_input = create_node_ref::<Input>(cx);
     let password_input = create_node_ref::<Input>(cx);
     let login_otp_request_action = create_server_action::<LoginOtpRequest>(cx);
     let login_otp_verify_action = create_server_action::<LoginOtpVerifyRequest>(cx);
+    let error = move || {
+        if let Some(Ok(login_otp_response)) = login_otp_verify_action.value().get() {
+            match login_otp_response {
+                true => "",
+                false => "Invalid Code",
+            };
+        }
+    };
     create_effect(cx, move |_| {
-        log!(
-            "Login OTP Verify Action: {:#?}",
-            if let Some(Ok(login_otp_response)) = login_otp_verify_action.value().get() {
-                match login_otp_response {
-                    true => {
-                        let navigate = use_navigate(cx);
-                        _ = navigate("/", Default::default());
+        if let Some(Ok(login_otp_response)) = login_otp_verify_action.value().get() {
+            match login_otp_response {
+                true => {
+                    let navigate = use_navigate(cx);
+                    _ = navigate("/", Default::default());
+                    if let Some(completed) = completed {
+                        completed.dispatch(());
                     }
-                    false => {
-                        set_error.update(|e| *e = "Invalid Code");
-                    }
-                };
-            }
-        );
+                }
+                false => {}
+            };
+        }
     });
     let disable_controls =
         move || login_otp_request_action.pending().get() || login_otp_verify_action.pending().get();
-    let on_click = move |_: MouseEvent| {
+    let on_submit = move |ev: SubmitEvent| {
+        ev.prevent_default();
         let email = username_input
             .get()
             .expect("Username field should be present")
@@ -107,48 +113,50 @@ pub fn LoginOtp(cx: Scope) -> impl IntoView {
         }
     };
     view! { cx,
-        <div class="my-0 mx-auto max-w-sm text-center">
-            <h2 class="p-6 text-4xl">"Login with OTP"</h2>
+        <div class="container">
+            <h2 class="header">"Login with OTP"</h2>
             <div class="flex flex-col text-left">
-                <div class="flex flex-col">
-                    <label for="username">"Email"</label>
-                    <input
-                        id="username"
-                        type="text"
-                        disabled=disable_controls
-                        node_ref=username_input
-                        max-length="25"
-                    />
-                </div>
-                {move || {
-                    if state.get() == LoginOtpState::GetOtp {
-                        view! { cx,
-                            <div class="flex flex-col mt-2">
-                                <label for="password">"OTP Code"</label>
-                                <input
-                                    id="password"
-                                    type="text"
-                                    disabled=disable_controls
-                                    node_ref=password_input
-                                    max-length="25"
-                                />
-                                <span class="error">{error}</span>
-                            </div>
+                <form on:submit=on_submit>
+                    <div class="flex flex-col">
+                        <label for="username">"Email"</label>
+                        <input
+                            id="username"
+                            type="text"
+                            disabled=disable_controls
+                            node_ref=username_input
+                            max-length="25"
+                        />
+                    </div>
+                    {move || {
+                        if state.get() == LoginOtpState::GetOtp {
+                            view! { cx,
+                                <div class="flex flex-col mt-2">
+                                    <label for="password">"OTP Code"</label>
+                                    <input
+                                        id="password"
+                                        type="text"
+                                        disabled=disable_controls
+                                        node_ref=password_input
+                                        max-length="25"
+                                    />
+                                    <span class="error">{error}</span>
+                                </div>
+                            }
+                                .into_view(cx)
+                        } else {
+                            view! { cx, <div></div> }
+                                .into_view(cx)
                         }
-                            .into_view(cx)
-                    } else {
-                        view! { cx, <div></div> }
-                            .into_view(cx)
-                    }
-                }}
-                <div class="text-center mt-8">
-                    <button class="w-40" on:click=on_click disabled=disable_controls>
-                        {move || match state.get() {
-                            LoginOtpState::GetEmail => "Request OTP",
-                            LoginOtpState::GetOtp => "Verify OTP",
-                        }}
-                    </button>
-                </div>
+                    }}
+                    <div class="text-center mt-8">
+                        <button class="w-40" type="submit" disabled=disable_controls>
+                            {move || match state.get() {
+                                LoginOtpState::GetEmail => "Request OTP",
+                                LoginOtpState::GetOtp => "Verify OTP",
+                            }}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     }

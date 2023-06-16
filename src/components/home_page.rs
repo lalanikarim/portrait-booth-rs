@@ -1,7 +1,13 @@
 use leptos::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{components::logout::Logout, models::user::User};
+use crate::{
+    components::{
+        login::Login, login_otp::LoginOtp, logout::Logout, orders::order_list::OrderList,
+        signup::Signup,
+    },
+    models::user::User,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum HomePageResponse {
@@ -24,42 +30,35 @@ pub async fn home_page_request(cx: Scope) -> Result<HomePageResponse, ServerFnEr
 pub fn HomePage(cx: Scope) -> impl IntoView {
     // Creates a reactive value to update the button
 
-    let (count, set_count) = create_signal(cx, 0);
-    let on_click = move |_| set_count.update(|count| *count += 1);
-
-    let (loggedin_user, set_loggedin_user) = create_signal(cx, None);
-
-    let user_name = move || {
-        loggedin_user
-            .get()
-            .map_or("".to_string(), |user: User| user.name)
-    };
-
-    spawn_local(async move {
-        if let Ok(response) = home_page_request(cx).await {
-            match response {
-                HomePageResponse::NotLoggedIn => {
-                    set_loggedin_user.update(|user| *user = None);
-                }
-                HomePageResponse::LoggedIn(user) => {
-                    set_loggedin_user.update(|loggedin_user| *loggedin_user = Some(user));
-                }
-            }
-        } else {
-            set_loggedin_user.update(|user| *user = None);
-        }
-    });
-
+    let completed = create_action(cx, |()| async {});
+    let home_page_resource = create_resource(
+        cx,
+        move || (completed.version().get(),),
+        move |_| async move { home_page_request(cx).await },
+    );
     view! { cx,
-        <h1>"Portrait Booth"</h1>
-        <button
-            class="bg-red-300 p-2 rounded mx-20 hover:bg-red-600 hover:text-white"
-            on:click=on_click
-        >
-            "Click Me: "
-            {count}
-        </button>
-        <div>"Logged in: " {user_name}</div>
-        <Logout/>
+        <h1 class="p6 text-4xl">"Portrait Booth"</h1>
+        <Suspense fallback=move || {
+            view! { cx, <div>"Loading..."</div> }
+        }>
+            {move || match home_page_resource.read(cx) {
+                Some(Ok(HomePageResponse::LoggedIn(user))) => {
+                    view! { cx,
+                        <div>"Logged in: " {user.name}</div>
+                        <Logout completed=completed/>
+                        <OrderList />
+                    }
+                        .into_view(cx)
+                }
+                _ => {
+                    view! { cx,
+                        <Login completed=completed/>
+                        <LoginOtp completed=completed/>
+                        <Signup completed=completed/>
+                    }
+                        .into_view(cx)
+                }
+            }}
+        </Suspense>
     }
 }

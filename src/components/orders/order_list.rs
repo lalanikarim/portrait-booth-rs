@@ -13,43 +13,57 @@ pub async fn get_orders_request(cx: Scope) -> Result<Vec<Order>, ServerFnError> 
 #[component]
 pub fn OrderList(cx: Scope) -> impl IntoView {
     let order_created = create_action(cx, |()| async {});
-    let get_orders_action = create_server_action::<GetOrdersRequest>(cx);
-    get_orders_action.dispatch(GetOrdersRequest {});
     let orders_resource = create_resource(
         cx,
         move || order_created.version().get(),
-        move |_| async move {
-            let Ok(result) = get_orders_request(cx).await else {
-            return Vec::new();
-        };
-            result
-        },
+        move |_| async move { get_orders_request(cx).await },
     );
-    let orders = move || orders_resource.read(cx).unwrap_or_default().into_iter();
 
     view! { cx,
-        <div class="my-0 mx-auto max-w-sm text-center">
-            <h2 class="p-6 text-4xl">"List of Orders"</h2>
-            <CreateOrder order_created />
-            <Suspense fallback=move || view!{cx, <div>"Loading..."</div>}>
-            <table class="table-auto w-full">
-                <thead>
-                    <tr>
-                        <th>"Order Id"</th>
-                        <th>"No of Photos"</th>
-                        <th>"Total"</th>
-                        <th>"Status"</th>
-                    </tr>
-                    <For
-                        each=orders
-                        key=|order| order.id
-                        view=move |cx, order| {
-                            view! { cx, <OrderRow order=order.to_owned()/> }
-                        }
-                    />
-                </thead>
-            </table>
-        </Suspense>
+        <CreateOrder order_created/>
+        <div class="container">
+            <h2 class="header">"List of Orders"</h2>
+            <Suspense fallback=move || {
+                view! { cx, <div>"Loading..."</div> }
+            }>
+                {move || {
+                    orders_resource
+                        .read(cx)
+                        .map(|orders| match orders {
+                            Err(_) => {
+                                view! { cx, <div class="error">"Error fetching orders"</div> }
+                                    .into_view(cx)
+                            }
+                            Ok(orders) => {
+                                if orders.len() > 0 {
+                                    view! { cx,
+                                        <table class="table-auto w-full">
+                                            <thead>
+                                                <tr>
+                                                    <th>"Order Id"</th>
+                                                    <th>"No of Photos"</th>
+                                                    <th>"Total"</th>
+                                                    <th>"Status"</th>
+                                                </tr>
+                                                <For
+                                                    each=move || orders.clone()
+                                                    key=|order| order.id
+                                                    view=move |cx, order| {
+                                                        view! { cx, <OrderRow order=order.to_owned()/> }
+                                                    }
+                                                />
+                                            </thead>
+                                        </table>
+                                    }
+                                        .into_view(cx)
+                                } else {
+                                    view! { cx, <div>"No orders found"</div> }
+                                        .into_view(cx)
+                                }
+                            }
+                        })
+                }}
+            </Suspense>
         </div>
     }
 }

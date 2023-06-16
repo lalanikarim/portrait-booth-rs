@@ -76,8 +76,8 @@ pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
         }
     };
     view! { cx,
-        <div class="my-0 mx-auto max-w-sm text-center">
-            <h2 class="p-6 text-4xl">"Create Order"</h2>
+        <div class="container">
+            <h2 class="header">"Create Order"</h2>
             <form on:submit=on_submit>
                 <div class="flex flex-col text-left">
                     <div class="flex flex-col">

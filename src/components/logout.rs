@@ -8,12 +8,15 @@ pub async fn logout_request(cx: Scope) -> Result<(), ServerFnError> {
 }
 
 #[component]
-pub fn Logout(cx: Scope) -> impl IntoView {
+pub fn Logout(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> impl IntoView {
     let on_click = move |_| {
         spawn_local(async move {
             if let Ok(_) = logout_request(cx).await {
                 let navigate = use_navigate(cx);
-                _ = navigate("/login", Default::default());
+                _ = navigate("/", Default::default());
+                if let Some(completed) = completed {
+                    completed.dispatch(());
+                }
             }
         });
     };
