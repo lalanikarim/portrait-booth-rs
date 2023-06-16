@@ -222,6 +222,8 @@ impl Order {
         order_ref: String,
         pool: &MySqlPool,
     ) -> Result<bool, ServerFnError> {
+        use base64::{engine::general_purpose, Engine as _};
+        let order_ref: String = general_purpose::URL_SAFE_NO_PAD.encode(order_ref);
         sqlx::query!("UPDATE `orders` SET mode_of_payment = ?, order_ref = ?, status = ? WHERE id = ? and status = ? and customer_id = ?",
                     PaymentMode::Stripe as i32,
                     order_ref,
@@ -339,5 +341,34 @@ impl Order {
         .await
         .map(|result| result.rows_affected() > 0)
         .map_err(|e| to_server_fn_error(e))
+    }
+
+    pub async fn update_order_confirmation(
+        order_ref: String,
+        payment_ref: String,
+        pool: &MySqlPool,
+    ) -> Result<bool, ServerFnError> {
+        sqlx::query!(
+            "UPDATE `orders` set payment_ref = ?, status = ? where mode_of_payment = ? and order_ref = ? and status = ?",
+            payment_ref,
+            OrderStatus::Paid,
+            PaymentMode::Stripe,
+            order_ref,
+            OrderStatus::PaymentPending
+        )
+        .execute(pool)
+        .await
+        .map(|result| result.rows_affected() > 0)
+        .map_err(|e| to_server_fn_error(e))
+    }
+
+    pub async fn get_by_order_confirmation(
+        order_ref: String,
+        pool: &MySqlPool,
+    ) -> Result<Option<Order>, ServerFnError> {
+        sqlx::query_as!(Order, "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where order_ref = ?", order_ref)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| to_server_fn_error(e))
     }
 }

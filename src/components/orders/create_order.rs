@@ -3,8 +3,6 @@ use leptos::{
     *,
 };
 
-use crate::components::error_template::ErrorTemplate;
-
 use super::UnitPrice;
 
 #[server(CreateOrderRequest, "/api")]

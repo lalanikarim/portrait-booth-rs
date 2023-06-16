@@ -18,6 +18,35 @@ pub async fn start_cash_payment_request(cx: Scope, order_id: u64) -> Result<bool
     Order::start_payment_cash(order_id, current_user.id, &pool).await
 }
 
+#[server(StartStripePaymentRequest, "/api")]
+pub async fn start_stripe_payment_request(
+    cx: Scope,
+    order_id: u64,
+) -> Result<String, ServerFnError> {
+    use crate::server::stripe::get_payment_link;
+    let pool = crate::pool(cx).expect("Pool should be present");
+    let auth = crate::auth::auth(cx).expect("Auth should be present");
+    let current_user = auth.current_user.expect("Logged in user should be present");
+    let order_ref = format!(
+        "Email: {}, Order #:{}",
+        current_user.email.expect("Email should be present"),
+        order_id
+    );
+
+    match Order::start_payment_stripe(order_id, current_user.id, order_ref, &pool).await {
+        Ok(true) => match Order::get_by_id(order_id, &pool).await {
+            Err(e) => Err(e),
+            Ok(None) => Err(ServerFnError::ServerError(
+                "Unable to fetch order".to_string(),
+            )),
+            Ok(Some(order)) => get_payment_link(cx, order).await,
+        },
+        Ok(false) => Err(ServerFnError::ServerError(
+            "Error starting Stripe Request".to_string(),
+        )),
+        Err(e) => Err(e),
+    }
+}
 #[component]
 pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
     let set_order = use_context::<WriteSignal<Option<Order>>>(cx)
@@ -26,6 +55,7 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
     let delete_conf_ref: NodeRef<Dialog> = create_node_ref(cx);
     let start_cash_payment_action = create_server_action::<StartCashPaymentRequest>(cx);
     let pay_cash_conf_ref: NodeRef<Dialog> = create_node_ref(cx);
+    let start_stripe_payment_action = create_server_action::<StartStripePaymentRequest>(cx);
 
     create_effect(cx, move |_| {
         if let Some(Ok(true)) = delete_order_action.value().get() {
@@ -39,6 +69,13 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
             let dialog = pay_cash_conf_ref.get().expect("dialog should be present");
             dialog.close();
             set_order.update(|o| *o = None);
+        }
+    });
+    create_effect(cx, move |_| {
+        if let Some(Ok(url)) = start_stripe_payment_action.value().get() {
+            log!("Url: {}", url);
+            let window = leptos::window();
+            _ = window.location().set_href(&url);
         }
     });
     view! { cx,
@@ -63,6 +100,19 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                     move || {
                         if order.status == OrderStatus::Created {
                             view! { cx,
+                                <button
+                                    class="m-2"
+                                    type="button"
+                                    on:click=move |ev| {
+                                        ev.prevent_default();
+                                        start_stripe_payment_action
+                                            .dispatch(StartStripePaymentRequest {
+                                                order_id: order.id,
+                                            });
+                                    }
+                                >
+                                    "Pay with Stripe"
+                                </button>
                                 <button
                                     class="m-2"
                                     type="button"
