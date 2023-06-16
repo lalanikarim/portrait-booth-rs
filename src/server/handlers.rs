@@ -1,22 +1,21 @@
-use std::sync::Arc;
-
 use axum::{
     body::Body as AxumBody,
-    extract::{Path, RawQuery},
+    extract::{Path, RawQuery, State},
     response::{IntoResponse, Response},
-    Extension,
 };
 use http::{HeaderMap, Request};
-use leptos::{log, provide_context, LeptosOptions, *};
+use leptos::{log, provide_context, *};
 use leptos_axum::handle_server_fns_with_context;
 use portrait_booth::{
     auth::{AuthSession, Session},
     components::app::App,
 };
-use sqlx::MySqlPool;
+
+use super::app_state::AppState;
 
 pub async fn server_fn_handler(
-    Extension(pool): Extension<MySqlPool>,
+    //Extension(pool): Extension<MySqlPool>,
+    State(AppState { pool, .. }): State<AppState>,
     session: Session,
     auth_session: AuthSession,
     path: Path<String>,
@@ -41,14 +40,18 @@ pub async fn server_fn_handler(
 }
 
 pub async fn leptos_routes_handler(
-    Extension(pool): Extension<MySqlPool>,
-    Extension(options): Extension<Arc<LeptosOptions>>,
+    //Extension(pool): Extension<MySqlPool>,
+    //Extension(options): Extension<Arc<LeptosOptions>>,
+    State(AppState {
+        leptos_options: options,
+        pool,
+    }): State<AppState>,
     session: Session,
     auth_session: AuthSession,
     req: Request<AxumBody>,
 ) -> Response {
     let handler = leptos_axum::render_app_to_stream_with_context(
-        (*options).clone(),
+        options.clone(),
         move |cx| {
             provide_context(cx, session.clone());
             provide_context(cx, auth_session.clone());

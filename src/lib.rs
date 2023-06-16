@@ -26,6 +26,7 @@ cfg_if! {
 
         use leptos::*;
         pub mod auth;
+        pub mod server;
 
         use sqlx::MySqlPool;
         pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
