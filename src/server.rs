@@ -1,8 +1,10 @@
 pub mod app_state;
+pub mod fileserv;
 pub mod handlers;
 
 use crate::server::{
     app_state::AppState,
+    fileserv::file_and_error_handler,
     handlers::{leptos_routes_handler, server_fn_handler},
 };
 use axum::{routing::get, Router};
@@ -10,7 +12,7 @@ use axum_session::{SessionConfig, SessionLayer, SessionMySqlPool, SessionStore};
 use axum_session_auth::AuthConfig;
 use leptos::*;
 
-use crate::{auth::AuthSessionLayer, components::app::*, fileserv::file_and_error_handler};
+use crate::{auth::AuthSessionLayer, components::app::*};
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use sqlx::mysql::MySqlPoolOptions;
 
@@ -67,4 +69,20 @@ pub async fn server_main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+use std::error::Error;
+pub fn to_server_fn_error(e: impl Error) -> ServerFnError {
+    ServerFnError::ServerError(e.to_string())
+}
+use sqlx::MySqlPool;
+pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
+    leptos::use_context::<MySqlPool>(cx)
+        .ok_or("db pool missing")
+        .map_err(|e| leptos::ServerFnError::ServerError(e.to_string()))
+}
+pub fn get_totp_duration() -> u64 {
+    let dur = dotenv!("TOTP_DURATION");
+    let dur = dur.parse().expect("TOTP_DURATION should be set");
+    leptos::log!("TOTP_DURATION: {}s", dur);
+    dur
 }

@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::{FromRow, Type};
-        use super::order_item::OrderItem;
+        use crate::models::order_item::OrderItem;
+        use crate::server::to_server_fn_error;
     } else {
 
         use dummy_macros::*;
@@ -65,7 +66,6 @@ cfg_if::cfg_if! {
         use sqlx::MySqlPool;
         use crate::models::user::User;
         use leptos::ServerFnError;
-        use crate::to_server_fn_error;
         use chrono::Local;
     }
 }
@@ -82,7 +82,7 @@ impl Order {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| crate::to_server_fn_error(e));
+        .map_err(|e| to_server_fn_error(e));
         result
     }
     pub async fn get_customer(&self, pool: &MySqlPool) -> Result<User, ServerFnError> {
@@ -96,7 +96,7 @@ impl Order {
             .bind(cashier_id)
             .fetch_one(pool)
             .await
-            .map_err(|e| crate::to_server_fn_error(e))
+            .map_err(|e| to_server_fn_error(e))
             .map(|u| Some(u))
     }
     pub async fn get_operator(&self, pool: &MySqlPool) -> Result<Option<User>, ServerFnError> {
@@ -107,7 +107,7 @@ impl Order {
             .bind(operator_id)
             .fetch_one(pool)
             .await
-            .map_err(|e| crate::to_server_fn_error(e))
+            .map_err(|e| to_server_fn_error(e))
             .map(|u| Some(u))
     }
     pub async fn get_processor(&self, pool: &MySqlPool) -> Result<Option<User>, ServerFnError> {
@@ -118,7 +118,7 @@ impl Order {
             .bind(processor_id)
             .fetch_one(pool)
             .await
-            .map_err(|e| crate::to_server_fn_error(e))
+            .map_err(|e| to_server_fn_error(e))
             .map(|u| Some(u))
     }
 
@@ -283,7 +283,7 @@ impl Order {
             .bind(self.id)
             .fetch_all(pool)
             .await
-            .map_err(|e| crate::to_server_fn_error(e))
+            .map_err(|e| to_server_fn_error(e))
     }
 
     pub async fn add_order_item(
@@ -300,6 +300,6 @@ impl Order {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| crate::to_server_fn_error(e))
+        .map_err(|e| to_server_fn_error(e))
     }
 }

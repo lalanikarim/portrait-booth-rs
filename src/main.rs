@@ -5,6 +5,10 @@ cfg_if! { if #[cfg(feature = "ssr")] {
 extern crate dotenv_codegen;
 
     pub mod server;
+    pub mod auth;
+    pub mod components;
+    pub mod models;
+    pub use server::{pool,get_totp_duration,to_server_fn_error};
 
     #[tokio::main]
     async fn main() {

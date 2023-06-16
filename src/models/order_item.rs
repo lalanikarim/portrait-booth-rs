@@ -7,6 +7,7 @@ cfg_if::cfg_if! {
         use sqlx::MySqlPool;
         use sqlx::FromRow;
         use chrono::Local;
+        use crate::server::to_server_fn_error;
     } else {
         use dummy_macros::*;
     }
@@ -38,7 +39,7 @@ impl OrderItem {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| crate::to_server_fn_error(e))
+        .map_err(|e| to_server_fn_error(e))
     }
     pub async fn add_processed(
         &self,
@@ -54,6 +55,6 @@ impl OrderItem {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| crate::to_server_fn_error(e))
+        .map_err(|e| to_server_fn_error(e))
     }
 }

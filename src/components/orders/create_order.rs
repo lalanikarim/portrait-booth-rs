@@ -3,8 +3,6 @@ use leptos::{
     *,
 };
 
-use crate::get_unit_price;
-
 #[server(CreateOrderRequest, "/api")]
 pub async fn create_order_request(cx: Scope, no_of_photos: u64) -> Result<bool, ServerFnError> {
     use crate::models::{order::Order, user::User};
@@ -17,7 +15,12 @@ pub async fn create_order_request(cx: Scope, no_of_photos: u64) -> Result<bool, 
         .await
         .map(|_| true)
 }
-
+#[server(GetUnitPrice, "/api")]
+pub async fn get_unit_price(cx: Scope) -> Result<u64, ServerFnError> {
+    dotenv!("PHOTO_UNIT_PRICE")
+        .parse::<u64>()
+        .map_err(|e| crate::to_server_fn_error(e))
+}
 #[component]
 pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
     let (error, set_error) = create_signal(cx, "".to_string());

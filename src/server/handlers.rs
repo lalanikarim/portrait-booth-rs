@@ -6,7 +6,8 @@ use axum::{
 use http::{HeaderMap, Request};
 use leptos::{log, provide_context, *};
 use leptos_axum::handle_server_fns_with_context;
-use portrait_booth::{
+
+use crate::{
     auth::{AuthSession, Session},
     components::app::App,
 };
