@@ -1,6 +1,9 @@
 use leptos::{ev::MouseEvent, *};
 
-use crate::{components::orders::create_order::CreateOrder, models::order::Order};
+use crate::{
+    components::orders::create_order::CreateOrder,
+    models::order::{Order, OrderStatus},
+};
 
 #[server(GetOrdersRequest, "/api")]
 pub async fn get_orders_request(cx: Scope) -> Result<Vec<Order>, ServerFnError> {
@@ -77,12 +80,16 @@ pub fn OrderRow(cx: Scope, order: Order) -> impl IntoView {
         let order = order.clone();
         set_order.update(|o| *o = Some(order));
     };
+    let status = move || match o.status {
+        OrderStatus::PaymentPending => format!("{:?} ({:?})", o.status, o.mode_of_payment),
+        _ => format!("{:?}", o.status),
+    };
     view! { cx,
         <tr>
             <td>{o.id}</td>
             <td>{o.no_of_photos}</td>
             <td>"$" {o.order_total}</td>
-            <td on:click=on_click>{format!("{:?}", o.status)}</td>
+            <td on:click=on_click>{status}</td>
         </tr>
     }
 }

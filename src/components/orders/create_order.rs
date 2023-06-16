@@ -3,6 +3,10 @@ use leptos::{
     *,
 };
 
+use crate::components::error_template::ErrorTemplate;
+
+use super::UnitPrice;
+
 #[server(CreateOrderRequest, "/api")]
 pub async fn create_order_request(cx: Scope, no_of_photos: u64) -> Result<bool, ServerFnError> {
     use crate::models::{order::Order, user::User};
@@ -15,28 +19,12 @@ pub async fn create_order_request(cx: Scope, no_of_photos: u64) -> Result<bool, 
         .await
         .map(|_| true)
 }
-#[server(GetUnitPrice, "/api")]
-pub async fn get_unit_price(cx: Scope) -> Result<u64, ServerFnError> {
-    dotenv!("PHOTO_UNIT_PRICE")
-        .parse::<u64>()
-        .map_err(|e| crate::to_server_fn_error(e))
-}
 #[component]
 pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
     let (error, set_error) = create_signal(cx, "".to_string());
     let (no_of_pics, set_no_of_pics) = create_signal(cx, 0);
-    let (unit_price, set_unit_price) = create_signal(cx, 0);
-    let total_price = move || format!("${}", no_of_pics.get() * unit_price.get());
-    create_resource(
-        cx,
-        move || no_of_pics.get(),
-        move |_| async move {
-            match get_unit_price(cx).await {
-                Ok(p) => set_unit_price.update(|price| *price = p),
-                Err(_) => set_error.update(|e| *e = "Error fetching unit price".to_string()),
-            }
-        },
-    );
+    let unit_price_resource = use_context::<Resource<(), Result<UnitPrice, ServerFnError>>>(cx)
+        .expect("Unit Price Resource should be present");
     let create_order_action = create_server_action::<CreateOrderRequest>(cx);
     create_effect(cx, move |_| {
         let Some(result) = create_order_action.value().get() else { return;};
@@ -81,32 +69,62 @@ pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
     view! { cx,
         <div class="container">
             <h2 class="header">"Create Order"</h2>
-            <form on:submit=on_submit>
-                <div class="flex flex-col text-left">
-                    <div class="flex flex-col">
-                        <label for="no-of-pics">"Number of Pictures"</label>
-                        <div class="flex flex-row justify-between">
-                            <button class="w-12" on:click=no_pics_decr disabled=disable_decr>
-                                "-"
-                            </button>
-                            <div class="inline-block align-middle">{no_of_pics}</div>
-                            <button class="w-12" on:click=no_pics_incr disabled=disable_incr>
-                                "+"
-                            </button>
-                        </div>
-                    </div>
-                    <div class="flex flex-col mt-2">
-                        <label>"Total"</label>
-                        <div class="text-right">{total_price}</div>
-                        <span class="error">{error}</span>
-                    </div>
-                    <div class="text-center mt-8">
-                        <button class="w-40" type="submit" disabled=disable_create>
-                            {create_title}
-                        </button>
-                    </div>
-                </div>
-            </form>
+            {move || {
+                match unit_price_resource.read(cx) {
+                    None => {
+                        view! { cx, <div>"Loading..."</div> }
+                            .into_view(cx)
+                    }
+                    Some(p) => {
+                        match p {
+                            Err(e) => {
+                                view! { cx, <div class="error">"Server Error: " {e.to_string()}</div> }
+                                    .into_view(cx)
+                            }
+                            Ok(UnitPrice(unit_price)) => {
+                                let total_price = format!("${}", unit_price * no_of_pics.get());
+                                view! { cx,
+                                    <form on:submit=on_submit>
+                                        <div class="flex flex-col text-left">
+                                            <div class="flex flex-col">
+                                                <label for="no-of-pics">"Number of Pictures"</label>
+                                                <div class="flex flex-row justify-between">
+                                                    <button
+                                                        class="w-12"
+                                                        on:click=no_pics_decr
+                                                        disabled=disable_decr
+                                                    >
+                                                        "-"
+                                                    </button>
+                                                    <div class="inline-block align-middle">{no_of_pics}</div>
+                                                    <button
+                                                        class="w-12"
+                                                        on:click=no_pics_incr
+                                                        disabled=disable_incr
+                                                    >
+                                                        "+"
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="flex flex-col mt-2">
+                                                <label>"Total"</label>
+                                                <div class="text-right">{total_price}</div>
+                                                <span class="error">{error}</span>
+                                            </div>
+                                            <div class="text-center mt-8">
+                                                <button class="w-40" type="submit" disabled=disable_create>
+                                                    {create_title}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                }
+                                    .into_view(cx)
+                            }
+                        }
+                    }
+                }
+            }}
         </div>
     }
 }

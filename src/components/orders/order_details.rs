@@ -55,56 +55,63 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
             <button type="button" on:click=move |_| set_order.update(|o| *o = None)>
                 "Back"
             </button>
-            {move || {
-                if order.status == OrderStatus::Created {
-                    view! { cx,
-                        <button
-                            class="m-2"
-                            type="button"
-                            on:click=move |ev| {
-                                ev.prevent_default();
-                                let dialog = pay_cash_conf_ref.get().expect("dialog should be present");
-                                _ = dialog.show_modal();
+            <Suspense fallback=move || {
+                view! { cx, <div>"Loading..."</div> }
+            }>
+                {
+                    let order = order.clone();
+                    move || {
+                        if order.status == OrderStatus::Created {
+                            view! { cx,
+                                <button
+                                    class="m-2"
+                                    type="button"
+                                    on:click=move |ev| {
+                                        ev.prevent_default();
+                                        let dialog = pay_cash_conf_ref.get().expect("dialog should be present");
+                                        _ = dialog.show_modal();
+                                    }
+                                >
+                                    "Pay with Cash"
+                                </button>
+                                <dialog node_ref=pay_cash_conf_ref>
+                                    <h2>"Please pay the cashier"</h2>
+                                    <button on:click=move |_| {
+                                        start_cash_payment_action
+                                            .dispatch(StartCashPaymentRequest {
+                                                order_id: order.id,
+                                            });
+                                    }>"Close"</button>
+                                </dialog>
+                                <button
+                                    type="button"
+                                    class="red"
+                                    on:click=move |ev| {
+                                        ev.prevent_default();
+                                        let dialog = delete_conf_ref.get().expect("dialog should be present");
+                                        _ = dialog.show_modal();
+                                    }
+                                >
+                                    "Delete"
+                                </button>
+                                <dialog node_ref=delete_conf_ref>
+                                    <h2>"Are you sure you want to delete this order?"</h2>
+                                    <button on:click=move |_| {
+                                        delete_order_action
+                                            .dispatch(DeleteOrderRequest {
+                                                order_id: order.id,
+                                            });
+                                    }>"Close"</button>
+                                </dialog>
                             }
-                        >
-                            "Pay with Cash"
-                        </button>
-                        <dialog node_ref=pay_cash_conf_ref>
-                            <h2>"Please pay the cashier"</h2>
-                            <button on:click=move |_| {
-                                start_cash_payment_action
-                                    .dispatch(StartCashPaymentRequest {
-                                        order_id: order.id,
-                                    });
-                            }>"Close"</button>
-                        </dialog>
-                        <button
-                            type="button"
-                            class="red"
-                            on:click=move |ev| {
-                                ev.prevent_default();
-                                let dialog = delete_conf_ref.get().expect("dialog should be present");
-                                _ = dialog.show_modal();
-                            }
-                        >
-                            "Delete"
-                        </button>
-                        <dialog node_ref=delete_conf_ref>
-                            <h2>"Are you sure you want to delete this order?"</h2>
-                            <button on:click=move |_| {
-                                delete_order_action
-                                    .dispatch(DeleteOrderRequest {
-                                        order_id: order.id,
-                                    });
-                            }>"Close"</button>
-                        </dialog>
+                                .into_view(cx)
+                        } else {
+                            view! { cx, <div></div> }
+                                .into_view(cx)
+                        }
                     }
-                        .into_view(cx)
-                } else {
-                    view! { cx, <div></div> }
-                        .into_view(cx)
                 }
-            }}
+            </Suspense>
         </div>
     }
 }
