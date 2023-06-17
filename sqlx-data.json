@@ -1,0 +1,1013 @@
+{
+  "db": "MySQL",
+  "18528e65336b8aafb90f79242670893021ffb20a736984ca2042f6d06be31fad": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "UPDATE `orders` SET operator_id = ?, status = ? WHERE id = ? and status = ?"
+  },
+  "277d9f4dd5c16e9ffb60e17e3d19c5e00d148a9f1e81fcb77b13c611df856310": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "UPDATE `orders` SET processor_id = ?, status = ? WHERE id = ? and status = ?"
+  },
+  "34cd4a5d74add390a0c0e88aa740b1d18323ac12ec1f40f834e00ecbc80858d3": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "UPDATE `orders` set payment_ref = ?, status = ? where mode_of_payment = ? and order_ref = ? and status = ?"
+  },
+  "37f7d677a18d03f0b3993ea63bb7ee091f847321a9855662023bce4e545d007e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "customer_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4137
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "cashier_id",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "operator_id",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "processor_id",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "no_of_photos",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "order_total",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "mode_of_payment:_",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "order_ref",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "payment_ref",
+          "ordinal": 9,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "status:_",
+          "ordinal": 10,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "created_at",
+          "ordinal": 11,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4225
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "payment_at",
+          "ordinal": 12,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where order_ref = ?"
+  },
+  "3c698b67db8d8057311b0855e086739110c5bafc396f6edb2f02c0c1e1dfbdac": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "UPDATE `orders` SET status = ? WHERE id = ? and processor_id = ? and status = ?"
+  },
+  "40bcbc8dca1ba79946838475f057389505b73627f83406e7cb1a135ce0185582": {
+    "describe": {
+      "columns": [
+        {
+          "name": "COUNT(1)",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT COUNT(1) FROM `users` where phone = ?"
+  },
+  "602ab11b1f41e85bcf583cd93ac320728c84d8e8f981a90c9d129e1b9fa9f80e": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "INSERT into `order_items` (order_id,original_url,created_at) values (?, ?, ?)"
+  },
+  "6b2d34bd163da5c2fab0abafe7ea93343b9313ffd50265a8ddd635892e9f9540": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "UPDATE `order_items` set thumbnail_url = ? where id = ?"
+  },
+  "6f9b20d2733c40e01f854632d01b394c007124192d268761e59bcec00ec9ebad": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)"
+  },
+  "81089f5e6f4f3676dd268ae773a4a24fdcb471067c63ec3e3534486d05c52b05": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "phone",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "password_hash",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "otp_secret",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "role:_",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "status: _",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id,name,email,phone,password_hash,otp_secret,role as `role:_`,status as `status: _` from `users` WHERE email = ?"
+  },
+  "870b3be713ee1bc5e97f3700771ad251271b728cb8bf4a9cdb0a233436b61ac5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "UPDATE `orders` SET cashier_id = ?,  status = ? WHERE id = ? and status = ? and mode_of_payment = ?"
+  },
+  "873c923d3239c21971b701604b9c504a0bc28531a0f80601fd4c6fca76d58aa9": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "INSERT INTO users (email,phone,password_hash,name,role) values (?,?,?,?,?)"
+  },
+  "958bee0c72e7539b41626d812c91d0cf14665c154bc54736f2bb57f0ed9fa987": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "UPDATE `orders` SET no_of_photos = ?,order_total = ? WHERE id = ?"
+  },
+  "d020a515d65ed1a307321284c2049a6459f294e11c065afc3351d48faf37c5b0": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "UPDATE `orders` SET payment_ref = ?, status = ? WHERE id = ? and mode_of_payment = ? and status = ?"
+  },
+  "d6d92e49ba438389872ec73b2324ddd4fa961024c081209a8e7ba2d1595d9ee7": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "phone",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "password_hash",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "otp_secret",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "role:_",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "status: _",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id,name,email,phone,password_hash,otp_secret,role as `role:_`,status as `status: _` from `users` WHERE id = ?"
+  },
+  "d6ee62752a82ea16255acf7ebd8107f8a96934b51d6914d17e555e2b29c1db78": {
+    "describe": {
+      "columns": [
+        {
+          "name": "otp_secret",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT otp_secret FROM users WHERE email = ?"
+  },
+  "d80de0ee899da0cbe659ee390ef956c1c22417d7823d607f47e15af22ae17b78": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "customer_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4137
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "cashier_id",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "operator_id",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "processor_id",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "no_of_photos",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "order_total",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "mode_of_payment:_",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "order_ref",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "payment_ref",
+          "ordinal": 9,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "status:_",
+          "ordinal": 10,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "created_at",
+          "ordinal": 11,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4225
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "payment_at",
+          "ordinal": 12,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where id = ?"
+  },
+  "df99e455ca8b2c500a29626d0fdaa37f3fec3044cf1cefbb51e5ab3bf6419fb5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "UPDATE `orders` SET mode_of_payment = ?, status = ? WHERE id = ? and customer_id = ? and status = ?"
+  },
+  "dff2b6e956a9f7663b9c11375939a174940422d17e6937bb01002e60e3ef42da": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "DELETE FROM `orders` WHERE id = ? and customer_id = ?"
+  },
+  "ee83c6a43875d3f346a1ff2679cb1001c993f79f9a091709ce374c9629f211a4": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "UPDATE `orders` SET mode_of_payment = ?, order_ref = ?, status = ? WHERE id = ? and status = ? and customer_id = ?"
+  },
+  "f12345543f62efe29df6057b27a6db5a0dcf269ef42790cb4a334377c6e6604f": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "UPDATE `order_items` set processed_url = ?, processed_at = ? where id = ?"
+  },
+  "f52c11580c647e3d05980c4eb2c2ca5bbdc4067980210d52a9dbbd7359a0552e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "COUNT(1)",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT COUNT(1) FROM `users` where email = ?"
+  },
+  "fe8b10f645015eff04bf8c3db7e6b6ac4e9760e0484187435d1119ed48d32497": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "customer_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4137
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "cashier_id",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "operator_id",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "processor_id",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "no_of_photos",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "order_total",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "mode_of_payment:_",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "order_ref",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "payment_ref",
+          "ordinal": 9,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "status:_",
+          "ordinal": 10,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "created_at",
+          "ordinal": 11,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4225
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "payment_at",
+          "ordinal": 12,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where customer_id = ?"
+  },
+  "fedf0151c32bd89574a1495737da2a354c5214fd23386e242a6086cd41123330": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "INSERT INTO `orders` (customer_id,no_of_photos,order_total,mode_of_payment,status,created_at) VALUES (?, ?, ?, ?, ?, ?)"
+  }
+}
