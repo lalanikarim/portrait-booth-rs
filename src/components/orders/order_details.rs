@@ -1,6 +1,9 @@
 use leptos::{html::Dialog, *};
 
-use crate::models::order::{Order, OrderStatus};
+use crate::{
+    components::files::file_list::FileList,
+    models::order::{Order, OrderStatus},
+};
 
 #[server(DeleteOrderRequest, "/api")]
 pub async fn delete_order_request(cx: Scope, order_id: u64) -> Result<bool, ServerFnError> {
@@ -167,6 +170,6 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                     }
                 }
             </Suspense>
-        </div>
+        </div><FileList/>
     }
 }

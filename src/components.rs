@@ -1,5 +1,6 @@
 pub mod app;
 pub mod error_template;
+pub mod files;
 pub mod home_page;
 pub mod login;
 pub mod login_otp;
