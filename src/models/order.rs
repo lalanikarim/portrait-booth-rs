@@ -127,9 +127,8 @@ impl Order {
         no_of_photos: u64,
         pool: &MySqlPool,
     ) -> Result<u64, ServerFnError> {
-        let unit_price: u64 = dotenv!("PHOTO_UNIT_PRICE")
-            .parse()
-            .expect("Unit Price should be a valid number");
+        let unit_price =
+            Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
         let order_total = no_of_photos * unit_price;
         sqlx::query!("INSERT INTO `orders` (customer_id,no_of_photos,order_total,mode_of_payment,status,created_at) VALUES (?, ?, ?, ?, ?, ?)",
                     customer_id,
@@ -167,12 +166,11 @@ impl Order {
     }
     pub async fn update(
         id: u64,
-        no_of_photos: i64,
+        no_of_photos: u64,
         pool: &MySqlPool,
     ) -> Result<u64, ServerFnError> {
-        let unit_price: i64 = dotenv!("PHOTO_UNIT_PRICE")
-            .parse()
-            .expect("Unit Price should be a valid number");
+        let unit_price =
+            Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
         let order_total = no_of_photos * unit_price;
         sqlx::query!(
             "UPDATE `orders` SET no_of_photos = ?,order_total = ? WHERE id = ?",
@@ -370,5 +368,12 @@ impl Order {
             .fetch_optional(pool)
             .await
             .map_err(|e| to_server_fn_error(e))
+    }
+
+    pub fn get_unit_price() -> Result<u64, ServerFnError> {
+        dotenv::var("PHOTO_UNIT_PRICE")
+            .unwrap_or("5".into())
+            .parse()
+            .map_err(|e| crate::to_server_fn_error(e))
     }
 }

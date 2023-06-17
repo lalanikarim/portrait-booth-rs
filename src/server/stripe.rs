@@ -4,10 +4,11 @@ use stripe::*;
 
 #[server(GetPaymentLink, "/api")]
 pub async fn get_payment_link(cx: Scope, order: Order) -> Result<String, ServerFnError> {
-    let secret_key = dotenv!("STRIPE_KEY");
-    let pricing_id = dotenv!("PHOTO_PRICING_ID");
+    let secret_key = dotenv::var("STRIPE_KEY").expect("STRIPE_KEY env variable should be present");
+    let pricing_id =
+        dotenv::var("PHOTO_PRICING_ID").expect("PHOTO_PRICING_ID env variable should be present");
 
-    let app_url = dotenv!("APP_URL");
+    let app_url = dotenv::var("APP_URL").expect("APP_URL env variable should be present");
     let order_ref = order.order_ref.expect("Order Ref should be present");
     let client = Client::new(secret_key);
     let mut create_payment_link_args = CreatePaymentLink::new(vec![CreatePaymentLinkLineItems {

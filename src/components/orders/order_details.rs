@@ -57,6 +57,7 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
     let pay_cash_conf_ref: NodeRef<Dialog> = create_node_ref(cx);
     let start_stripe_payment_action = create_server_action::<StartStripePaymentRequest>(cx);
 
+    let pay_stripe_conf_ref: NodeRef<Dialog> = create_node_ref(cx);
     create_effect(cx, move |_| {
         if let Some(Ok(true)) = delete_order_action.value().get() {
             let dialog = delete_conf_ref.get().expect("dialog should be present");
@@ -73,7 +74,6 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
     });
     create_effect(cx, move |_| {
         if let Some(Ok(url)) = start_stripe_payment_action.value().get() {
-            log!("Url: {}", url);
             let window = leptos::window();
             _ = window.location().set_href(&url);
         }
@@ -89,7 +89,7 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                 <dt>"Order total"</dt>
                 <dd>"$" {order.order_total}</dd>
             </dl>
-            <button type="button" on:click=move |_| set_order.update(|o| *o = None)>
+            <button class="m-1" type="button" on:click=move |_| set_order.update(|o| *o = None)>
                 "Back"
             </button>
             <Suspense fallback=move || {
@@ -101,10 +101,12 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                         if order.status == OrderStatus::Created {
                             view! { cx,
                                 <button
-                                    class="m-2"
+                                    class="m-1"
                                     type="button"
                                     on:click=move |ev| {
                                         ev.prevent_default();
+                                        let dialog = pay_stripe_conf_ref.get().expect("dialog should be present");
+                                        _ = dialog.show_modal();
                                         start_stripe_payment_action
                                             .dispatch(StartStripePaymentRequest {
                                                 order_id: order.id,
@@ -113,8 +115,11 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                                 >
                                     "Pay with Stripe"
                                 </button>
+                                <dialog node_ref=pay_stripe_conf_ref>
+                                    <h2>"Redirecting to Stripe. Please wait..."</h2>
+                                </dialog>
                                 <button
-                                    class="m-2"
+                                    class="m-1"
                                     type="button"
                                     on:click=move |ev| {
                                         ev.prevent_default();
@@ -135,7 +140,7 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                                 </dialog>
                                 <button
                                     type="button"
-                                    class="red"
+                                    class="red m-1"
                                     on:click=move |ev| {
                                         ev.prevent_default();
                                         let dialog = delete_conf_ref.get().expect("dialog should be present");

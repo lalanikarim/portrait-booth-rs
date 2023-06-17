@@ -1,9 +1,5 @@
 use cfg_if::cfg_if;
 cfg_if! { if #[cfg(feature = "ssr")] {
-
-#[macro_use]
-extern crate dotenv_codegen;
-
     pub mod server;
     pub mod auth;
     pub mod components;

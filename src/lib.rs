@@ -20,8 +20,6 @@ cfg_if! { if #[cfg(feature = "hydrate")] {
 }}
 cfg_if! {
     if #[cfg(feature = "ssr")] {
-        #[macro_use]
-        extern crate dotenv_codegen;
 
         pub mod auth;
         pub mod server;
