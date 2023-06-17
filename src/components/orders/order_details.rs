@@ -1,7 +1,7 @@
 use leptos::{html::Dialog, *};
 
 use crate::{
-    components::files::file_list::FileList,
+    components::files::{file_list::FileList, uploader::Uploader},
     models::order::{Order, OrderStatus},
 };
 
@@ -170,6 +170,6 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                     }
                 }
             </Suspense>
-        </div><FileList/>
+        </div><FileList/><Uploader />
     }
 }

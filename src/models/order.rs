@@ -326,13 +326,23 @@ impl Order {
 
     pub async fn add_order_item(
         &self,
-        original_url: String,
+        original_get_url: String,
+        original_put_url: String,
+        thumbnail_get_url: String,
+        thumbnail_put_url: String,
+        processed_get_url: String,
+        processed_put_url: String,
         pool: &MySqlPool,
     ) -> Result<bool, ServerFnError> {
         sqlx::query!(
-            "INSERT into `order_items` (order_id,original_url,created_at) values (?, ?, ?)",
+            "INSERT into `order_items` (order_id,original_get_url,original_put_url,thumbnail_get_url,thumbnail_put_url,processed_get_url,processed_put_url,created_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
             self.id,
-            original_url,
+            original_get_url,
+            original_put_url,
+            thumbnail_get_url,
+            thumbnail_put_url,
+            processed_get_url,
+            processed_put_url,
             Local::now()
         )
         .execute(pool)

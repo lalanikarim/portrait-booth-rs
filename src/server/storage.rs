@@ -3,6 +3,8 @@ use s3::bucket::Bucket;
 use s3::creds::Credentials;
 use s3::region::Region;
 
+use crate::to_server_fn_error;
+
 pub async fn get_bucket() -> Result<Bucket, ServerFnError> {
     let bucket_name = dotenv::var("S3_BUCKET_NAME").expect("should be present");
     let endpoint = dotenv::var("S3_ENDPOINT").expect("should be present");
@@ -42,5 +44,14 @@ pub async fn get_files(prefix: String) -> Result<Vec<String>, ServerFnError> {
                     .flatten()
                     .collect()
             }),
+    }
+}
+
+pub async fn create_presigned_url(path: String) -> Result<String, ServerFnError> {
+    match get_bucket().await {
+        Err(e) => Err(e),
+        Ok(bucket) => bucket
+            .presign_get(path, 300, None)
+            .map_err(|e| to_server_fn_error(e)),
     }
 }

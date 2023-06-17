@@ -17,44 +17,50 @@ cfg_if::cfg_if! {
 pub struct OrderItem {
     pub id: u64,
     pub order_id: u64,
-    pub original_url: String,
-    pub thumbnail_url: Option<String>,
-    pub processed_url: Option<String>,
+    pub file_name: String,
+    pub original_get_url: String,
+    pub original_put_url: String,
+    pub original_uploaded: bool,
+    pub original_uploaded_at: Option<NaiveDateTime>,
+    pub thumbnail_get_url: String,
+    pub thumbnail_put_url: String,
+    pub thumbnail_uploaded: bool,
+    pub thumbnail_uploaded_at: Option<NaiveDateTime>,
+    pub processed_get_url: String,
+    pub processed_put_url: String,
+    pub processed_uploaded: bool,
+    pub processed_uploaded_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub processed_at: Option<NaiveDateTime>,
 }
 
 #[cfg(feature = "ssr")]
 impl OrderItem {
-    pub async fn add_thumbnail(
-        &self,
-        thumbnail_url: String,
-        pool: &MySqlPool,
-    ) -> Result<bool, ServerFnError> {
-        sqlx::query!(
-            "UPDATE `order_items` set thumbnail_url = ? where id = ?",
-            thumbnail_url,
-            self.id
-        )
-        .execute(pool)
-        .await
-        .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+    pub async fn set_original_uploaded(&self, pool: &MySqlPool) -> Result<bool, ServerFnError> {
+        sqlx::query!("UPDATE `order_items` SET original_uploaded = true, original_uploaded_at = ? WHERE id = ?",
+            Local::now(), 
+            self.id)
+            .execute(pool)
+            .await
+            .map_err(|e| to_server_fn_error(e))
+            .map(|result| result.rows_affected() > 0)
     }
-    pub async fn add_processed(
-        &self,
-        processed_url: String,
-        pool: &MySqlPool,
-    ) -> Result<bool, ServerFnError> {
-        sqlx::query!(
-            "UPDATE `order_items` set processed_url = ?, processed_at = ? where id = ?",
-            processed_url,
-            Local::now(),
-            self.id
-        )
-        .execute(pool)
-        .await
-        .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+    pub async fn set_thumbnail_uploaded(&self, pool: &MySqlPool) -> Result<bool, ServerFnError> {
+        sqlx::query!("UPDATE `order_items` SET thumbnail_uploaded = true, thumbnail_uploaded_at = ? WHERE id = ?",
+            Local::now(), 
+            self.id)
+            .execute(pool)
+            .await
+            .map_err(|e| to_server_fn_error(e))
+            .map(|result| result.rows_affected() > 0)
+    }
+    pub async fn set_processed_uploaded(&self, pool: &MySqlPool) -> Result<bool, ServerFnError> {
+        sqlx::query!("UPDATE `order_items` SET processed_uploaded = true, processed_uploaded_at = ? WHERE id = ?",
+            Local::now(), 
+            self.id)
+            .execute(pool)
+            .await
+            .map_err(|e| to_server_fn_error(e))
+            .map(|result| result.rows_affected() > 0)
     }
 }
