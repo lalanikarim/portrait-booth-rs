@@ -1,5 +1,7 @@
 use leptos::*;
 
+use crate::{components::files::uploader::UploaderMode, models::order::Order};
+
 #[server(GetFiles, "/api")]
 pub async fn get_files(cx: Scope, prefix: String) -> Result<Vec<String>, ServerFnError> {
     crate::server::storage::get_files(prefix).await
@@ -12,8 +14,9 @@ pub async fn get_url_request(cx: Scope, path: String) -> Result<String, ServerFn
 }
 
 #[component]
-pub fn FileList(cx: Scope) -> impl IntoView {
-    let (prefix, set_prefix) = create_signal(cx, "/".to_string());
+pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
+    let prefix = format!("/{:0>6}/{:?}/", order.id, mode).to_lowercase();
+    let (prefix, set_prefix) = create_signal(cx, prefix);
     let (file, set_file) = create_signal(cx, None);
     let get_files_resource = create_resource(
         cx,
@@ -49,7 +52,7 @@ pub fn FileList(cx: Scope) -> impl IntoView {
             <h2 class="header">"Files"</h2>
             <Suspense fallback=move || {
                 view! { cx, <div>"Loading..."</div> }
-            }>
+            }><div class="left-justified">
                 {move || match get_files_resource.read(cx) {
                     None => {
                         view! { cx, <div>"Loading..."</div> }
@@ -62,6 +65,9 @@ pub fn FileList(cx: Scope) -> impl IntoView {
                                     .into_view(cx)
                             }
                             Ok(files) => {
+                            if files.is_empty() {
+                                view!{cx,<div class="text-center w-full">"Not files uploaded"</div>}.into_view(cx)
+                            } else {
                                 files
                                     .iter()
                                     .map(|file| {
@@ -75,9 +81,10 @@ pub fn FileList(cx: Scope) -> impl IntoView {
                                     })
                                     .collect_view(cx)
                             }
+                            }
                         }
                     }
-                }}
+                }}</div>
             </Suspense>
         </div>
     }

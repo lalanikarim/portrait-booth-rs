@@ -77,6 +77,11 @@
         my-5 mx-auto max-w-md text-center shadow-lg rounded-md p-6 bg-white
   }
 
+  div.left-justified {
+    @apply
+      text-left
+  }
+
   h2.header {
     @apply
       text-3xl mb-5

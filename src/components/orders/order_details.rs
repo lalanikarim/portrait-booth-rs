@@ -1,7 +1,10 @@
 use leptos::{html::Dialog, *};
 
 use crate::{
-    components::files::{file_list::FileList, uploader::Uploader},
+    components::files::{
+        file_list::FileList,
+        uploader::{Uploader, UploaderMode},
+    },
     models::order::{Order, OrderStatus},
 };
 
@@ -81,6 +84,7 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
             _ = window.location().set_href(&url);
         }
     });
+    let order_clone = order.clone();
     view! { cx,
         <div class="container">
             <h2 class="header">"Order Details"</h2>
@@ -170,6 +174,8 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                     }
                 }
             </Suspense>
-        </div><FileList/><Uploader />
+        </div>
+        <FileList order=order_clone.clone() mode=UploaderMode::Original/>
+        <Uploader order=order_clone.clone() mode=UploaderMode::Original/>
     }
 }

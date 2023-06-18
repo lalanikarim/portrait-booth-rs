@@ -2,6 +2,8 @@ use leptos::*;
 use serde::{Deserialize, Serialize};
 use web_sys::{DragEvent, Request, RequestInit, RequestMode};
 
+use crate::models::order::Order;
+
 #[server(GetPreSignedPutUrl, "/api")]
 pub async fn get_pre_signed_put_url(cx: Scope, path: String) -> Result<String, ServerFnError> {
     crate::server::storage::create_presigned_put_url(path).await
@@ -15,8 +17,15 @@ pub enum FileUploadState {
     Error,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub enum UploaderMode {
+    Original,
+    Thumbnail,
+    Processed,
+}
+
 #[component]
-pub fn Uploader(cx: Scope) -> impl IntoView {
+pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
     let (files_to_upload, set_files_to_upload) =
         create_signal(cx, Vec::<(String, FileUploadState)>::new());
     let upload_file = move |file: web_sys::File, url: String| async move {
@@ -36,6 +45,7 @@ pub fn Uploader(cx: Scope) -> impl IntoView {
             .expect("JS Future await should work");
     };
     let on_drop = move |ev: DragEvent| {
+        let mode = mode.clone();
         ev.prevent_default();
         let dt = ev.data_transfer().unwrap();
         let items = dt.items();
@@ -56,21 +66,23 @@ pub fn Uploader(cx: Scope) -> impl IntoView {
         }
         spawn_local(async move {
             for file in files.into_iter() {
-                let file_name = &file.name();
+                let prefix = format!("/{:0>6}/{:?}", order.id, mode).to_lowercase();
+                let full_file_name = format!("{}/{}", prefix, &file.name());
+                let file_name = file.name();
                 set_files_to_upload.update(|f| {
                     for elem in f.iter_mut() {
-                        if elem.0 == file_name.to_owned() {
-                            *elem = (file_name.to_owned(), FileUploadState::Uploading);
+                        if elem.0 == file_name.clone() {
+                            *elem = (file_name.clone(), FileUploadState::Uploading);
                         }
                     }
                 });
-                match get_pre_signed_put_url(cx, format!("/files/{}", file_name)).await {
+                match get_pre_signed_put_url(cx, full_file_name).await {
                     Ok(url) => {
                         upload_file(file, url).await;
                         set_files_to_upload.update(|f| {
                             for elem in f.iter_mut() {
-                                if elem.0 == file_name.to_owned() {
-                                    *elem = (file_name.to_owned(), FileUploadState::Done);
+                                if elem.0 == file_name.clone() {
+                                    *elem = (file_name.clone(), FileUploadState::Done);
                                 }
                             }
                         });
@@ -79,8 +91,8 @@ pub fn Uploader(cx: Scope) -> impl IntoView {
                         error!("{:#?}", e);
                         set_files_to_upload.update(|f| {
                             for elem in f.iter_mut() {
-                                if elem.0 == file_name.to_owned() {
-                                    *elem = (file_name.to_owned(), FileUploadState::Error);
+                                if elem.0 == file_name.clone() {
+                                    *elem = (file_name.clone(), FileUploadState::Error);
                                 }
                             }
                         });
@@ -120,9 +132,9 @@ pub fn Uploader(cx: Scope) -> impl IntoView {
     view! { cx,
         <div class="container">
             <h2 class="header">"Upload Files"</h2>
-            <div class="m-5 h-60 border-4 border-dashed rounded-xl">
+            <div class="m-2 h-60 border-4 border-dashed rounded-xl">
                 <div
-                    class="flex flex-col items-center justify-center h-full"
+                    class="left-justified overflow-y-scroll h-full"
                     on:dragover=move |ev| {
                         ev.prevent_default();
                     }
