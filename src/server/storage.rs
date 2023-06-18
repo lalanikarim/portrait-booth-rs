@@ -55,3 +55,11 @@ pub async fn create_presigned_url(path: String) -> Result<String, ServerFnError>
             .map_err(|e| to_server_fn_error(e)),
     }
 }
+pub async fn create_presigned_put_url(path: String) -> Result<String, ServerFnError> {
+    match get_bucket().await {
+        Err(e) => Err(e),
+        Ok(bucket) => bucket
+            .presign_put(path, 300, None)
+            .map_err(|e| to_server_fn_error(e)),
+    }
+}
