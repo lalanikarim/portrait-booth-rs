@@ -97,7 +97,7 @@ pub fn Uploader(cx: Scope) -> impl IntoView {
                 let state = state.to_owned();
                 view! { cx,
                     <div>
-                        <span >{file}</span>
+                        <span>{file}</span>
                         {move || match state {
                             FileUploadState::Added => {
                                 view! { cx, <span class="italic text-stone-400">" added"</span> }
