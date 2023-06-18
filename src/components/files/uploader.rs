@@ -1,4 +1,5 @@
 use leptos::*;
+use serde::{Deserialize, Serialize};
 use web_sys::{DragEvent, Request, RequestInit, RequestMode};
 
 #[server(GetPreSignedPutUrl, "/api")]
@@ -6,8 +7,18 @@ pub async fn get_pre_signed_put_url(cx: Scope, path: String) -> Result<String, S
     crate::server::storage::create_presigned_put_url(path).await
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub enum FileUploadState {
+    Added,
+    Uploading,
+    Done,
+    Error,
+}
+
 #[component]
 pub fn Uploader(cx: Scope) -> impl IntoView {
+    let (files_to_upload, set_files_to_upload) =
+        create_signal(cx, Vec::<(String, FileUploadState)>::new());
     let upload_file = move |file: web_sys::File, url: String| async move {
         let form_data = web_sys::FormData::new().expect("Form Data should create");
         form_data
@@ -20,51 +31,104 @@ pub fn Uploader(cx: Scope) -> impl IntoView {
         let request =
             Request::new_with_str_and_init(&url, &opts).expect("Request init should work");
         let window = web_sys::window().expect("Window should work");
-        let resp_value = wasm_bindgen_futures::JsFuture::from(window.fetch_with_request(&request))
+        _ = wasm_bindgen_futures::JsFuture::from(window.fetch_with_request(&request))
             .await
             .expect("JS Future await should work");
-        log!("{:#?}", resp_value);
     };
     let on_drop = move |ev: DragEvent| {
         ev.prevent_default();
         let dt = ev.data_transfer().unwrap();
         let items = dt.items();
         let c = items.length();
+        let mut files = Vec::new();
         for i in 0..c {
             let item = items.get(i);
             if let Some(item) = item {
                 if item.kind() == "file".to_string() {
                     if let Ok(Some(file)) = item.get_as_file() {
-                        log!("Uploading {}", file.name());
-                        spawn_local(async move {
-                            match get_pre_signed_put_url(cx, format!("/files/{}", file.name()))
-                                .await
-                            {
-                                Ok(url) => {
-                                    upload_file(file, url).await;
-                                    log!("Upload done");
+                        set_files_to_upload.update(|f| {
+                            f.push((file.name(), FileUploadState::Added));
+                        });
+                        files.push(file);
+                    }
+                }
+            }
+        }
+        spawn_local(async move {
+            for file in files.into_iter() {
+                let file_name = &file.name();
+                set_files_to_upload.update(|f| {
+                    for elem in f.iter_mut() {
+                        if elem.0 == file_name.to_owned() {
+                            *elem = (file_name.to_owned(), FileUploadState::Uploading);
+                        }
+                    }
+                });
+                match get_pre_signed_put_url(cx, format!("/files/{}", file_name)).await {
+                    Ok(url) => {
+                        upload_file(file, url).await;
+                        set_files_to_upload.update(|f| {
+                            for elem in f.iter_mut() {
+                                if elem.0 == file_name.to_owned() {
+                                    *elem = (file_name.to_owned(), FileUploadState::Done);
                                 }
-                                Err(e) => error!("{:#?}", e),
+                            }
+                        });
+                    }
+                    Err(e) => {
+                        error!("{:#?}", e);
+                        set_files_to_upload.update(|f| {
+                            for elem in f.iter_mut() {
+                                if elem.0 == file_name.to_owned() {
+                                    *elem = (file_name.to_owned(), FileUploadState::Error);
+                                }
                             }
                         });
                     }
                 }
-            };
-        }
+            }
+        });
+    };
+    let file_list = move || {
+        files_to_upload
+            .get()
+            .iter()
+            .map(move |(file, state)| {
+                let state = state.to_owned();
+                view! { cx,
+                    <div>
+                        <span >{file}</span>
+                        {move || match state {
+                            FileUploadState::Added => {
+                                view! { cx, <span class="italic text-stone-400">" added"</span> }
+                            }
+                            FileUploadState::Uploading => {
+                                view! { cx, <span class="italic text-green-400">" uploading"</span> }
+                            }
+                            FileUploadState::Done => {
+                                view! { cx, <span class="italic text-green-400">" done"</span> }
+                            }
+                            FileUploadState::Error => {
+                                view! { cx, <span class="italic text-red-400">" error"</span> }
+                            }
+                        }}
+                    </div>
+                }
+            })
+            .collect::<Vec<_>>()
     };
     view! { cx,
         <div class="container">
             <h2 class="header">"Upload Files"</h2>
             <div class="m-5 h-60 border-4 border-dashed rounded-xl">
                 <div
-                    class="flex items-center justify-center h-full"
+                    class="flex flex-col items-center justify-center h-full"
                     on:dragover=move |ev| {
-                        log!("Drag over");
                         ev.prevent_default();
                     }
                     on:drop=on_drop
                 >
-                    "Test"
+                    {file_list}
                 </div>
             </div>
         </div>
