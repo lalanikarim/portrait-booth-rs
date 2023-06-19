@@ -16,3 +16,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - backend
+  
+networks:
+  backend:

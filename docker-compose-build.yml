@@ -10,6 +10,9 @@ services:
       #- ./target/site/pkg/portrait-booth.wasm:/target/site/pkg/portrait-booth_bg.wasm
       #- ./.env:/.env
     environment:
+      - LEPTOS_OUTPUT_NAME=portrait-booth
       - LEPTOS_SITE_ADDR=0.0.0.0:3000
       - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD}@mysql:3306/portraitdb
     command: tail -f /dev/null
+    networks:
+      - backend

@@ -35,6 +35,7 @@ pub enum PaymentMode {
     NotSelected = 0,
     Cash = 1,
     Stripe = 2,
+    Override = 3,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq, PartialOrd)]
