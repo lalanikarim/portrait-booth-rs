@@ -1,18 +1,14 @@
 services:
   rust-build:
+    depends_on:
+      - mysql
     build:
-      dockerfile: rust-build.dockerfile
+      dockerfile: rust-build-debian.dockerfile
+      #dockerfile: rust-build-alpine.dockerfile
     ports:
-      - "3000:3000"
+      - "8080:8080"
     volumes:
-      - .:/app
-      #- ./target:/target
-      #- ./target/site/pkg/portrait-booth.wasm:/target/site/pkg/portrait-booth_bg.wasm
-      #- ./.env:/.env
+      - ./.env:/app/.env
     environment:
       - LEPTOS_OUTPUT_NAME=portrait-booth
-      - LEPTOS_SITE_ADDR=0.0.0.0:3000
       - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD}@mysql:3306/portraitdb
-    command: tail -f /dev/null
-    networks:
-      - backend
