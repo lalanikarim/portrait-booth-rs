@@ -247,7 +247,7 @@ pub fn signup(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) ->
                         <div class="hint">
                             "Minimum 8 characters. Include at least one of each: lowercase, uppercase, number, and special characters !@#$%^&*"
                         </div>
-                        <div class="error">{error_items}</div>
+                        <div class="error" inner_html=error_items></div>
                     </div>
                     {move || {
                         if signup_action.pending().get() {

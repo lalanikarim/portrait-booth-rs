@@ -118,9 +118,9 @@ pub fn LoginOtp(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) 
             <div class="flex flex-col text-left">
                 <form on:submit=on_submit>
                     <div class="flex flex-col">
-                        <label for="username">"Email"</label>
+                        <label for="username_otp">"Email"</label>
                         <input
-                            id="username"
+                            id="username_otp"
                             type="text"
                             disabled=disable_controls
                             node_ref=username_input
@@ -131,9 +131,9 @@ pub fn LoginOtp(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) 
                         if state.get() == LoginOtpState::GetOtp {
                             view! { cx,
                                 <div class="flex flex-col mt-2">
-                                    <label for="password">"OTP Code"</label>
+                                    <label for="otp_code">"OTP Code"</label>
                                     <input
-                                        id="password"
+                                        id="otp_code"
                                         type="text"
                                         disabled=disable_controls
                                         node_ref=password_input

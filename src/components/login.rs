@@ -10,7 +10,7 @@ pub struct LoginForm {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum LoginResponse {
     LoggedIn(User),
     InvalidCredentials,
@@ -54,43 +54,21 @@ async fn login_request(
 
 #[component]
 pub fn Login(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> impl IntoView {
-    let (error, set_error) = create_signal(cx, "");
     let username_input: NodeRef<Input> = create_node_ref(cx);
     let password_input: NodeRef<Input> = create_node_ref(cx);
-    let login_action_fn = move |LoginForm { username, password }: &LoginForm| {
-        let username = username.clone();
-        let password = password.clone();
-        async move {
-            let Ok(response) = login_request(cx, username.clone(), password.clone()).await else {
-                panic!("Error encountered")
-            };
-            let login_err = match response {
-                LoginResponse::LoggedIn(_) => {
-                    log!("Login successful");
-                    let navigate = use_navigate(cx);
-                    _ = navigate("/", Default::default());
-                    if let Some(completed) = completed {
-                        completed.dispatch(());
-                    }
-                    ""
-                }
-                LoginResponse::InvalidCredentials => {
-                    log!("Invalid Credentials");
-                    "Invalid Credentials"
-                }
-                LoginResponse::NotActivated => {
-                    log!("Account not activated yet");
-                    "Account not activated yet"
-                }
-                LoginResponse::LockedOut => {
-                    log!("Account is locked");
-                    "Account is locked"
-                }
-            };
-            set_error.update(|err| *err = login_err);
-        }
+    let login_request_action = create_server_action::<LoginRequest>(cx);
+    let error = move || match login_request_action.value().get() {
+        Some(response) => match response {
+            Ok(response) => match response {
+                LoginResponse::InvalidCredentials => "Invalid Credentials".to_string(),
+                LoginResponse::NotActivated => "Account not activated yet".to_string(),
+                LoginResponse::LockedOut => "Account is locked".to_string(),
+                _ => "".to_string(),
+            },
+            Err(e) => e.to_string(),
+        },
+        None => "".to_string(),
     };
-    let login_action = create_action(cx, login_action_fn);
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
         let username = username_input
@@ -101,16 +79,26 @@ pub fn Login(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> 
             .get()
             .expect("Password element should be present")
             .value();
-        login_action.dispatch(LoginForm { username, password });
+        login_request_action.dispatch(LoginRequest { username, password });
     };
     let login_button_text = move || {
-        if login_action.pending().get() {
+        if login_request_action.pending().get() {
             "Logging in"
         } else {
             "Login"
         }
     };
-    let disable_control = move || login_action.pending().get();
+    let disable_control = move || login_request_action.pending().get();
+    create_effect(cx, move |_| {
+        let Some(Ok(LoginResponse::LoggedIn(_))) = login_request_action.value().get() else {
+            return;
+        };
+        let navigate = use_navigate(cx);
+        _ = navigate("/", Default::default());
+        if let Some(completed) = completed {
+            completed.dispatch(());
+        }
+    });
     view! { cx,
         <div class="container">
             <h2 class="header">"Login"</h2>
@@ -135,8 +123,8 @@ pub fn Login(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> 
                             max-length="25"
                             disabled=disable_control
                         />
-                        <span class="error">{error}</span>
                     </div>
+                <div class="error" inner_html=error></div>
                     <div class="flex flex-row text-center justify-between mt-8">
                         <button class="w-40" type="submit" disabled=disable_control>
                             {login_button_text}

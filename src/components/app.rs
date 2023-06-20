@@ -2,7 +2,10 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
-use crate::components::{home_page::HomePage, orders::confirmation::Confirmation};
+use crate::components::{
+    home_page::HomePage, login::Login, login_otp::LoginOtp, orders::confirmation::Confirmation,
+    signup::Signup,
+};
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -19,6 +22,24 @@ pub fn App(cx: Scope) -> impl IntoView {
                         path=""
                         view=|cx| {
                             view! { cx, <HomePage/> }
+                        }
+                    />
+                    <Route
+                        path="/login"
+                        view=|cx| {
+                            view! { cx, <Login/> }
+                        }
+                    />
+                    <Route
+                        path="/otp"
+                        view=|cx| {
+                            view! { cx, <LoginOtp/> }
+                        }
+                    />
+                    <Route
+                        path="/signup"
+                        view=|cx| {
+                            view! { cx, <Signup/> }
                         }
                     />
                     <Route

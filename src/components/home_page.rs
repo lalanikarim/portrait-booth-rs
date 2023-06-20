@@ -18,18 +18,16 @@ pub enum HomePageResponse {
 #[server(HomePageRequest, "/api")]
 pub async fn home_page_request(cx: Scope) -> Result<HomePageResponse, ServerFnError> {
     let auth = crate::auth::auth(cx).expect("Auth should be present");
-    if let Some(user) = auth.current_user {
+    let response = if let Some(user) = auth.current_user {
         Ok(HomePageResponse::LoggedIn(user))
     } else {
         Ok(HomePageResponse::NotLoggedIn)
-    }
+    };
+    response
 }
 
-/// Renders the home page of your application.
 #[component]
 pub fn HomePage(cx: Scope) -> impl IntoView {
-    // Creates a reactive value to update the button
-
     let completed = create_action(cx, |()| async {});
     let home_page_resource = create_resource(
         cx,
@@ -41,24 +39,41 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
         <Suspense fallback=move || {
             view! { cx, <div>"Loading..."</div> }
         }>
-            {move || match home_page_resource.read(cx) {
-                Some(Ok(HomePageResponse::LoggedIn(user))) => {
-                    view! { cx,
-                        <div>"Logged in: " {user.name}</div>
-                        <Logout completed=completed/>
-                        <OrdersView />
+            {
+                move || {
+                    let response = home_page_resource.read(cx);
+                    match response {
+                        None => {
+                            view! { cx, <div>"Loading..."</div> }
+                                .into_view(cx)
+                        }
+                        Some(response) => {
+                            match response {
+                                Err(e) => {
+                                    view!{cx, <div class="error">"Error: "{e.to_string()}</div>}.into_view(cx)
+                                }
+                                Ok(HomePageResponse::LoggedIn(user)) => {
+                                    view! { cx,
+                                        <div>"Logged in: " {user.name}</div>
+                                        <Logout completed=completed/>
+                                        <OrdersView/>
+                                    }
+                                        .into_view(cx)
+                                }
+                                Ok(HomePageResponse::NotLoggedIn) => {
+                                    view! { cx,
+                                        <div>"Not Logged In Response"</div>
+                                        <Login completed=completed/>
+                                        <LoginOtp completed=completed/>
+                                        <Signup completed=completed/>
+                                    }
+                                        .into_view(cx)
+                                }
+                            }
+                        }
                     }
-                        .into_view(cx)
                 }
-                _ => {
-                    view! { cx,
-                        <Login completed=completed/>
-                        <LoginOtp completed=completed/>
-                        <Signup completed=completed/>
-                    }
-                        .into_view(cx)
-                }
-            }}
+            }
         </Suspense>
     }
 }
