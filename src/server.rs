@@ -30,6 +30,15 @@ pub async fn server_main() {
         "PHOTO_PRICING_ID",
         "PHOTO_UNIT_PRICE",
         "TOTP_DURATION",
+        "S3_BUCKET_NAME",
+        "S3_REGION",
+        "S3_ENDPOINT",
+        "S3_ACCESS_KEY",
+        "S3_SECRET_KEY",
+        "SMTP_FROM_EMAIL",
+        "SMTP_USERNAME",
+        "SMTP_PASSWORD",
+        "SMTP_RELAY",
     ];
 
     env_vars.iter().for_each(|key| {
