@@ -1,6 +1,8 @@
 use leptos::{ev::SubmitEvent, html::Input, *};
 use leptos_router::*;
 
+use crate::server;
+
 #[server(LoginOtpRequest, "/api")]
 pub async fn login_otp_request(cx: Scope, email: String) -> Result<(), ServerFnError> {
     use totp_rs::*;
@@ -18,11 +20,10 @@ pub async fn login_otp_request(cx: Scope, email: String) -> Result<(), ServerFnE
             otp_secret.as_bytes().into(),
         )
         .expect("Unable to Initialize TOTP");
-        log!(
-            "OTP Code: {:#?}, ttl: {:#?}s",
-            totp.generate_current().expect("Unable to generate OTP"),
-            totp.ttl()
-        );
+        let otp = totp.generate_current().expect("Unable to generate OTP");
+        log!("OTP Code: {:#?}, ttl: {:#?}s", otp, totp.ttl());
+        let email_response = server::mailer::send_otp(email, otp.clone()).await;
+        log!("Email: {:#?}", email_response);
     }
     Ok(())
 }

@@ -1,6 +1,7 @@
 pub mod app_state;
 pub mod fileserv;
 pub mod handlers;
+pub mod mailer;
 pub mod storage;
 pub mod stripe;
 
