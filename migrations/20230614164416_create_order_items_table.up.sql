@@ -18,4 +18,4 @@ CREATE TABLE `order_items` (
   processed_at datetime null,
   primary key (id),
   foreign key (order_id) references `orders` (id)
-)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8

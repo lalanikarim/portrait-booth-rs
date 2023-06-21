@@ -11,4 +11,4 @@ CREATE TABLE `users` (
   primary key (id),
   unique (email),
   unique (phone)
-)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8

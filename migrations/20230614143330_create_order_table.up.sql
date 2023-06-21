@@ -19,4 +19,4 @@ CREATE TABLE `orders` (
   foreign key (cashier_id) references users (id) on delete cascade,
   foreign key (operator_id) references users (id) on delete cascade,
   foreign key (processor_id) references users (id) on delete cascade
-)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
