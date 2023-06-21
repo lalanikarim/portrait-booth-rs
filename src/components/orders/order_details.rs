@@ -33,11 +33,7 @@ pub async fn start_stripe_payment_request(
     let pool = crate::pool(cx).expect("Pool should be present");
     let auth = crate::auth::auth(cx).expect("Auth should be present");
     let current_user = auth.current_user.expect("Logged in user should be present");
-    let order_ref = format!(
-        "Email: {}, Order #:{}",
-        current_user.email.expect("Email should be present"),
-        order_id
-    );
+    let order_ref = format!("Email: {}, Order #:{}", current_user.email, order_id);
 
     match Order::start_payment_stripe(order_id, current_user.id, order_ref, &pool).await {
         Ok(true) => match Order::get_by_id(order_id, &pool).await {

@@ -12,7 +12,7 @@ pub enum SignupResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignupForm {
     pub fullname: String,
-    pub email: Option<String>,
+    pub email: String,
     pub phone: Option<String>,
     pub password: String,
 }
@@ -61,34 +61,18 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
     use totp_rs::*;
 
     let pool = pool(cx)?;
-    if form.email.is_some() {
-        match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where email = ?", form.email)
-            .fetch_one(&pool)
-            .await
-        {
-            Ok(1) => {
-                return Ok(SignupResponse::EmailAlreadyUsed);
-            }
-            Err(e) => {
-                return Err(ServerFnError::ServerError(e.to_string()));
-            }
-            _ => (),
-        };
-    }
-    if form.phone.is_some() {
-        match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where phone = ?", form.phone)
-            .fetch_one(&pool)
-            .await
-        {
-            Ok(1) => {
-                return Ok(SignupResponse::PhoneAlreadyUsed);
-            }
-            Err(e) => {
-                return Err(ServerFnError::ServerError(e.to_string()));
-            }
-            _ => (),
-        };
-    }
+    match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where email = ?", form.email)
+        .fetch_one(&pool)
+        .await
+    {
+        Ok(1) => {
+            return Ok(SignupResponse::EmailAlreadyUsed);
+        }
+        Err(e) => {
+            return Err(ServerFnError::ServerError(e.to_string()));
+        }
+        _ => (),
+    };
     let password_hash = bcrypt::hash(form.password.clone(), 12).unwrap();
 
     let Secret::Encoded(otp_secret) = Secret::generate_secret().to_encoded() else {
@@ -110,7 +94,11 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
     .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 #[component]
-pub fn signup(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> impl IntoView {
+pub fn signup(
+    cx: Scope,
+    #[prop(default = false)] otp_on_success: bool,
+    #[prop(optional)] completed: Option<Action<(), ()>>,
+) -> impl IntoView {
     let (errors, set_errors) = create_signal::<Vec<String>>(cx, Vec::new());
     let fullname_input = create_node_ref::<Input>(cx);
     let email_input = create_node_ref::<Input>(cx);
@@ -122,7 +110,7 @@ pub fn signup(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) ->
         let form = form.clone();
         async move {
             let navigate = use_navigate(cx);
-            match signup_request(cx, form).await {
+            match signup_request(cx, form.clone()).await {
                 Err(e) => {
                     let err_str = e.to_string();
                     set_errors.update(|err| err.push(err_str));
@@ -130,9 +118,15 @@ pub fn signup(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) ->
                 Ok(result) => {
                     match result {
                         SignupResponse::Success => {
-                            _ = navigate("/", Default::default());
-                            if let Some(completed) = completed {
-                                completed.dispatch(());
+                            if otp_on_success {
+                                let SignupForm { email, .. } = form;
+                                let otp_route = format!("/otp?email={}&show_email=false", email);
+                                _ = navigate(otp_route.as_str(), Default::default());
+                            } else {
+                                _ = navigate("/", Default::default());
+                                if let Some(completed) = completed {
+                                    completed.dispatch(());
+                                }
                             }
                         }
                         SignupResponse::EmailAlreadyUsed => {
@@ -173,7 +167,6 @@ pub fn signup(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) ->
         if let Err(password_error) = validate_password(password.clone(), confirm_password.clone()) {
             set_errors.update(move |err| err.extend_from_slice(&password_error));
         } else {
-            let email = if email.len() > 0 { Some(email) } else { None };
             let phone = if phone.len() > 0 { Some(phone) } else { None };
             let form = SignupForm {
                 fullname,

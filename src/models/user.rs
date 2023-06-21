@@ -24,7 +24,7 @@ cfg_if::cfg_if! {
 #[derive(Debug, Clone, Serialize, Deserialize, Default, FromRow)]
 pub struct User {
     pub id: u64,
-    pub email: Option<String>,
+    pub email: String,
     pub phone: Option<String>,
     #[serde(skip)]
     pub password_hash: Option<String>,
@@ -64,13 +64,10 @@ impl User {
     pub fn anonymous() -> Self {
         Self {
             id: 0,
-            email: None,
-            phone: None,
-            password_hash: None,
-            otp_secret: None,
             role: Role::Anonymous,
             status: UserStatus::Disabled,
             name: "Guest".to_owned(),
+            ..Default::default()
         }
     }
 

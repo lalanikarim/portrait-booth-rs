@@ -33,13 +33,21 @@ pub fn App(cx: Scope) -> impl IntoView {
                     <Route
                         path="/otp"
                         view=|cx| {
-                            view! { cx, <LoginOtp/> }
-                        }
+                        let query = use_query_map(cx);
+                        let email = move ||query.with(|query| query.get("email").cloned());
+                        let show_email = move ||query.with(|query| query.get("show_email").cloned()).map(|s| s == "true").unwrap_or(false);
+                        let Some(email) = email() else {
+
+                            return view! { cx, <LoginOtp  /> }
+                        };
+                        let show_email = show_email();
+                        view!{cx, <LoginOtp email show_email />}
+    }
                     />
                     <Route
                         path="/signup"
                         view=|cx| {
-                            view! { cx, <Signup/> }
+                            view! { cx, <Signup otp_on_success=true/> }
                         }
                     />
                     <Route

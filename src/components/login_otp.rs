@@ -59,12 +59,24 @@ pub async fn login_otp_verify_request(
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum LoginOtpState {
     GetEmail,
-    GetOtp,
+    GetOtp(String),
 }
 
 #[component]
-pub fn LoginOtp(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> impl IntoView {
-    let (state, set_state) = create_signal(cx, LoginOtpState::GetEmail);
+pub fn LoginOtp(
+    cx: Scope,
+    #[prop(optional)] email: Option<String>,
+    #[prop(default = true)] show_email: bool,
+    #[prop(optional)] completed: Option<Action<(), ()>>,
+) -> impl IntoView {
+    let (state, set_state) = create_signal(
+        cx,
+        email
+            .clone()
+            .map(|email| LoginOtpState::GetOtp(email))
+            .unwrap_or(LoginOtpState::GetEmail),
+    );
+    let (email_error, set_email_error) = create_signal(cx, "");
     let username_input = create_node_ref::<Input>(cx);
     let password_input = create_node_ref::<Input>(cx);
     let login_otp_request_action = create_server_action::<LoginOtpRequest>(cx);
@@ -99,40 +111,57 @@ pub fn LoginOtp(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) 
             .get()
             .expect("Username field should be present")
             .value();
-        match state.get() {
-            LoginOtpState::GetEmail => {
-                login_otp_request_action.dispatch(LoginOtpRequest { email });
-                set_state.update(|state| *state = LoginOtpState::GetOtp);
+        if email.len() > 0 {
+            set_email_error.update(|e| *e = "");
+            match state.get() {
+                LoginOtpState::GetEmail => {
+                    login_otp_request_action.dispatch(LoginOtpRequest {
+                        email: email.to_owned(),
+                    });
+                    set_state.update(|state| *state = LoginOtpState::GetOtp(email));
+                }
+                LoginOtpState::GetOtp(email) => {
+                    let otp = password_input
+                        .get()
+                        .expect("otp field should be present")
+                        .value();
+                    login_otp_verify_action.dispatch(LoginOtpVerifyRequest { email, otp })
+                }
             }
-            LoginOtpState::GetOtp => {
-                let otp = password_input
-                    .get()
-                    .expect("otp field should be present")
-                    .value();
-                login_otp_verify_action.dispatch(LoginOtpVerifyRequest { email, otp })
-            }
+        } else {
+            set_email_error.update(|e| *e = "Enter a valid email");
         }
     };
+    if let Some(email) = email {
+        login_otp_request_action.dispatch(LoginOtpRequest { email });
+    }
     view! { cx,
         <div class="container">
-            <h2 class="header">"Login with OTP"</h2>
+            <h2 class="header">"Login with Code"</h2>
             <div class="flex flex-col text-left">
                 <form on:submit=on_submit>
-                    <div class="flex flex-col">
-                        <label for="username_otp">"Email"</label>
-                        <input
-                            id="username_otp"
-                            type="text"
-                            disabled=disable_controls
-                            node_ref=username_input
-                            max-length="25"
-                        />
+                    <div style:display=move || if !show_email { "none" } else { "block" }>
+                        <div class="flex flex-col">
+                            <label for="username_otp">"Email"</label>
+                            <input
+                                id="username_otp"
+                                type="text"
+                                disabled=disable_controls
+                                node_ref=username_input
+                                max-length="25"
+                                value=move || match state.get() {
+                                    LoginOtpState::GetEmail => "".to_string(),
+                                    LoginOtpState::GetOtp(email) => email,
+                                }
+                            />
+                            <div class="error">{email_error}</div>
+                        </div>
                     </div>
                     {move || {
-                        if state.get() == LoginOtpState::GetOtp {
+                        if let LoginOtpState::GetOtp(_e) = state.get() {
                             view! { cx,
                                 <div class="flex flex-col mt-2">
-                                    <label for="otp_code">"OTP Code"</label>
+                                    <label for="otp_code">"Enter code from email"</label>
                                     <input
                                         id="otp_code"
                                         type="text"
@@ -152,8 +181,8 @@ pub fn LoginOtp(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) 
                     <div class="text-center mt-8">
                         <button class="w-40" type="submit" disabled=disable_controls>
                             {move || match state.get() {
-                                LoginOtpState::GetEmail => "Request OTP",
-                                LoginOtpState::GetOtp => "Verify OTP",
+                                LoginOtpState::GetEmail => "Request Code",
+                                LoginOtpState::GetOtp(_) => "Verify Code",
                             }}
                         </button>
                     </div>
