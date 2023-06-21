@@ -241,31 +241,6 @@
     },
     "query": "UPDATE `orders` SET status = ? WHERE id = ? and processor_id = ? and status = ?"
   },
-  "40bcbc8dca1ba79946838475f057389505b73627f83406e7cb1a135ce0185582": {
-    "describe": {
-      "columns": [
-        {
-          "name": "COUNT(1)",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 129
-            },
-            "max_size": 21,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT COUNT(1) FROM `users` where phone = ?"
-  },
   "6313612510b35996d9f44032c82ce3b5088beef22a9d64b7e97a42126f474144": {
     "describe": {
       "columns": [],
@@ -319,7 +294,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4
+              "bits": 4101
             },
             "max_size": 1020,
             "type": "VarString"
@@ -331,7 +306,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4
+              "bits": 0
             },
             "max_size": 1020,
             "type": "VarString"
@@ -389,7 +364,7 @@
       "nullable": [
         false,
         false,
-        true,
+        false,
         true,
         true,
         true,
@@ -485,7 +460,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4
+              "bits": 4101
             },
             "max_size": 1020,
             "type": "VarString"
@@ -497,7 +472,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4
+              "bits": 0
             },
             "max_size": 1020,
             "type": "VarString"
@@ -555,7 +530,7 @@
       "nullable": [
         false,
         false,
-        true,
+        false,
         true,
         true,
         true,
