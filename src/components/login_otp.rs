@@ -132,9 +132,6 @@ pub fn LoginOtp(
             set_email_error.update(|e| *e = "Enter a valid email");
         }
     };
-    if let Some(email) = email {
-        login_otp_request_action.dispatch(LoginOtpRequest { email });
-    }
     view! { cx,
         <div class="container">
             <h2 class="header">"Login with Code"</h2>
