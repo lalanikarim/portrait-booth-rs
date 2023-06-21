@@ -15,6 +15,8 @@ FROM rust:alpine3.18 as runner
 COPY --from=builder /app/target/server/release/portrait-booth /app/
 COPY --from=builder /app/target/site /app/site
 COPY --from=builder /app/Cargo.toml /app/
+COPY --from=builder /app/start.sh /app/
+COPY --from=builder /app/stop.sh /app/
 WORKDIR /app
 ENV RUST_LOG="info"
 ENV APP_ENVIRONMENT="production"
