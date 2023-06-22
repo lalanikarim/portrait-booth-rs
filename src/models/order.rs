@@ -127,11 +127,11 @@ impl Order {
         customer_id: u64,
         no_of_photos: u64,
         pool: &MySqlPool,
-    ) -> Result<u64, ServerFnError> {
-        let unit_price =
+    ) -> Result<Option<Order>, ServerFnError> {
+        let (zero_price, unit_price) =
             Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
-        let order_total = no_of_photos * unit_price;
-        sqlx::query!("INSERT INTO `orders` (customer_id,no_of_photos,order_total,mode_of_payment,status,created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        let order_total = no_of_photos * unit_price + zero_price;
+        let order_create = sqlx::query!("INSERT INTO `orders` (customer_id,no_of_photos,order_total,mode_of_payment,status,created_at) VALUES (?, ?, ?, ?, ?, ?)",
                     customer_id,
                     no_of_photos,
                     order_total,
@@ -140,8 +140,13 @@ impl Order {
                     Local::now())
                     .execute(pool)
                     .await
-                    .map(|result| result.last_insert_id())
-                    .map_err(|e| to_server_fn_error(e))
+                    .map(|result| result.last_insert_id());
+        match order_create {
+            Err(e) => Err(to_server_fn_error(e)),
+            Ok(order_id) => Order::get_by_id(order_id, pool)
+                .await
+                .map_err(|e| to_server_fn_error(e)),
+        }
     }
 
     pub async fn get_by_id(id: u64, pool: &MySqlPool) -> Result<Option<Order>, ServerFnError> {
@@ -170,9 +175,9 @@ impl Order {
         no_of_photos: u64,
         pool: &MySqlPool,
     ) -> Result<u64, ServerFnError> {
-        let unit_price =
+        let (zero_price, unit_price) =
             Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
-        let order_total = no_of_photos * unit_price;
+        let order_total = no_of_photos * unit_price + zero_price;
         sqlx::query!(
             "UPDATE `orders` SET no_of_photos = ?,order_total = ? WHERE id = ?",
             id,
@@ -381,10 +386,20 @@ impl Order {
             .map_err(|e| to_server_fn_error(e))
     }
 
-    pub fn get_unit_price() -> Result<u64, ServerFnError> {
-        dotenv::var("PHOTO_UNIT_PRICE")
+    pub fn get_unit_price() -> Result<(u64, u64), ServerFnError> {
+        let unit_price = dotenv::var("PHOTO_UNIT_PRICE")
             .unwrap_or("5".into())
             .parse()
-            .map_err(|e| crate::to_server_fn_error(e))
+            .map_err(|e| crate::to_server_fn_error(e));
+        let zero_price = dotenv::var("PHOTO_ZERO_PRICE")
+            .unwrap_or("5".into())
+            .parse()
+            .map_err(|e| crate::to_server_fn_error(e));
+        match (zero_price, unit_price) {
+            (Ok(zero_price), Ok(unit_price)) => Ok((zero_price, unit_price)),
+            _ => Err(ServerFnError::ServerError(
+                "Unable to find or parse price".to_string(),
+            )),
+        }
     }
 }

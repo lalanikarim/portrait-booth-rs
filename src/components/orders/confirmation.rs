@@ -82,6 +82,7 @@ pub fn Confirmation(cx: Scope) -> impl IntoView {
                                         .into_view(cx)
                                 }
                                 Ok(_order) => {
+                                    //set_order.set(Some(order));
                                     view! { cx, <div>"Payment confirmed"</div> }
                                         .into_view(cx)
                                 }

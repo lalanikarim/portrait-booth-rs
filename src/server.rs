@@ -29,6 +29,7 @@ pub async fn server_main() {
         "STRIPE_KEY",
         "PHOTO_PRICING_ID",
         "PHOTO_UNIT_PRICE",
+        "PHOTO_ZERO_PRICE",
         "TOTP_DURATION",
         "S3_BUCKET_NAME",
         "S3_REGION",

@@ -113,7 +113,7 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                             view! { cx, <LoginOtp completed/> }
                                         }
                                         ActiveView::Signup => {
-                                            view! { cx, <Signup completed/> }
+                                            view! { cx, <Signup otp_on_success=true ask_password=false/> }
                                         }
                                     }}
                                 }

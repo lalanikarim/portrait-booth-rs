@@ -16,7 +16,7 @@ pub struct SignupForm {
     pub fullname: String,
     pub email: String,
     pub phone: Option<String>,
-    pub password: String,
+    pub password: Option<String>,
 }
 fn validate_password(password: String, confirm_password: String) -> Result<(), Vec<String>> {
     let mut error: Vec<String> = Vec::new();
@@ -75,11 +75,11 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
         }
         _ => (),
     };
-    let password_hash = bcrypt::hash(form.password.clone(), 12).unwrap();
 
     let Secret::Encoded(otp_secret) = Secret::generate_secret().to_encoded() else {
         return Err(ServerFnError::ServerError("Unable to generate OTP Secret".into()));
     };
+    let password_hash = bcrypt::hash(form.password.unwrap_or(otp_secret.clone()), 12).unwrap();
 
     sqlx::query!(
         "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)",
@@ -98,6 +98,7 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
 #[component]
 pub fn signup(
     cx: Scope,
+    #[prop(default = true)] ask_password: bool,
     #[prop(default = false)] otp_on_success: bool,
     #[prop(optional)] completed: Option<Action<(), ()>>,
 ) -> impl IntoView {
@@ -162,17 +163,28 @@ pub fn signup(
             .get()
             .expect("username input should exist")
             .value();
-        let password = password_input
-            .get()
-            .expect("password input should exist")
-            .value();
-        let confirm_password = confirm_password_input
-            .get()
-            .expect("confirm password input should exist")
-            .value();
-        if let Err(password_error) = validate_password(password.clone(), confirm_password.clone()) {
-            set_errors.update(move |err| err.extend_from_slice(&password_error));
+
+        let ok_to_signup = if ask_password {
+            let password = password_input
+                .get()
+                .expect("password input should exist")
+                .value();
+            let confirm_password = confirm_password_input
+                .get()
+                .expect("confirm password input should exist")
+                .value();
+            if let Err(password_error) =
+                validate_password(password.clone(), confirm_password.clone())
+            {
+                set_errors.update(move |err| err.extend_from_slice(&password_error));
+                (false, None)
+            } else {
+                (true, Some(password))
+            }
         } else {
+            (true, None)
+        };
+        if let (true, password) = ok_to_signup {
             let phone = if phone.len() > 0 { Some(phone) } else { None };
             let form = SignupForm {
                 fullname,
@@ -222,32 +234,42 @@ pub fn signup(
                             max-length="25"
                         />
                     </div>
-                    <div class="flex flex-col mt-2">
-                        <label for="password">"Password"</label>
-                        <input
-                            id="password"
-                            type="password"
-                            disabled=disable_controls
-                            node_ref=password_input
-                            required
-                            max-length="25"
-                        />
-                    </div>
-                    <div class="flex flex-col mt-2">
-                        <label for="confirm_password">"Confirm Password"</label>
-                        <input
-                            id="confirm_password"
-                            type="password"
-                            disabled=disable_controls
-                            node_ref=confirm_password_input
-                            required
-                            max-length="25"
-                        />
-                        <div class="hint">
-                            "Minimum 8 characters. Include at least one of each: lowercase, uppercase, number, and special characters !@#$%^&*"
-                        </div>
-                        <div class="error" inner_html=error_items></div>
-                    </div>
+                    {move || {
+                        if ask_password {
+                            view! { cx,
+                                <div class="flex flex-col mt-2">
+                                    <label for="password">"Password"</label>
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        disabled=disable_controls
+                                        node_ref=password_input
+                                        required
+                                        max-length="25"
+                                    />
+                                </div>
+                                <div class="flex flex-col mt-2">
+                                    <label for="confirm_password">"Confirm Password"</label>
+                                    <input
+                                        id="confirm_password"
+                                        type="password"
+                                        disabled=disable_controls
+                                        node_ref=confirm_password_input
+                                        required
+                                        max-length="25"
+                                    />
+                                    <div class="hint">
+                                        "Minimum 8 characters. Include at least one of each: lowercase, uppercase, number, and special characters !@#$%^&*"
+                                    </div>
+                                    <div class="error" inner_html=error_items></div>
+                                </div>
+                            }
+                                .into_view(cx)
+                        } else {
+                            view! { cx, <div></div> }
+                                .into_view(cx)
+                        }
+                    }}
                     {move || {
                         if signup_action.pending().get() {
                             view! { cx,

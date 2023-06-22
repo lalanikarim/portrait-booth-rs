@@ -91,6 +91,8 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                 <dd>{order.no_of_photos}</dd>
                 <dt>"Order total"</dt>
                 <dd>"$" {order.order_total}</dd>
+                <dt>"Status"</dt>
+                <dd>{format!("{:?}",order.status)}</dd>
             </dl>
             <button class="m-1" type="button" on:click=move |_| set_order.update(|o| *o = None)>
                 "Back"
