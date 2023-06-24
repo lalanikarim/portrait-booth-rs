@@ -7,9 +7,9 @@ use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use crate::to_server_fn_error;
 
 fn get_mailer() -> Result<AsyncSmtpTransport<Tokio1Executor>, ServerFnError> {
-    let username = dotenv::var("SMTP_USERNAME").expect("SMTP_USERNAME should be present");
-    let password = dotenv::var("SMTP_PASSWORD").expect("SMTP_PASSWORD should be present");
-    let relay = dotenv::var("SMTP_RELAY").expect("SMTP_RELAY should be present");
+    let username = dotenvy::var("SMTP_USERNAME").expect("SMTP_USERNAME should be present");
+    let password = dotenvy::var("SMTP_PASSWORD").expect("SMTP_PASSWORD should be present");
+    let relay = dotenvy::var("SMTP_RELAY").expect("SMTP_RELAY should be present");
 
     let creds = Credentials::new(username, password);
 
@@ -19,7 +19,7 @@ fn get_mailer() -> Result<AsyncSmtpTransport<Tokio1Executor>, ServerFnError> {
 }
 
 fn email_builder() -> MessageBuilder {
-    let from = dotenv::var("SMTP_FROM_EMAIL").expect("SMTP_FROM_EMAIL should be present");
+    let from = dotenvy::var("SMTP_FROM_EMAIL").expect("SMTP_FROM_EMAIL should be present");
     Message::builder()
         .from(from.parse().unwrap())
         .reply_to(from.parse().unwrap())

@@ -20,7 +20,7 @@ use leptos_axum::{generate_route_list, LeptosRoutes};
 use sqlx::mysql::MySqlPoolOptions;
 
 pub async fn server_main() {
-    use dotenv;
+    use dotenvy;
     simple_logger::init_with_level(log::Level::Debug).expect("couldn't initialize logging");
 
     let env_vars = [
@@ -44,10 +44,10 @@ pub async fn server_main() {
 
     env_vars.iter().for_each(|key| {
         let error = format!("{} env variable should be present", key);
-        dotenv::var(key).expect(&error);
+        dotenvy::var(key).expect(&error);
     });
 
-    let dburl = dotenv::var("DATABASE_URL").expect("DATABASE_URL env variable should be present");
+    let dburl = dotenvy::var("DATABASE_URL").expect("DATABASE_URL env variable should be present");
     let pool = MySqlPoolOptions::new()
         .connect(&dburl)
         .await
@@ -109,7 +109,7 @@ pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
         .map_err(|e| leptos::ServerFnError::ServerError(e.to_string()))
 }
 pub fn get_totp_duration() -> u64 {
-    let dur = dotenv::var("TOTP_DURATION").unwrap_or("3600".into());
+    let dur = dotenvy::var("TOTP_DURATION").unwrap_or("3600".into());
     let dur = dur.parse().expect("TOTP_DURATION should be set");
     leptos::log!("TOTP_DURATION: {}s", dur);
     dur

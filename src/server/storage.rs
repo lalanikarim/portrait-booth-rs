@@ -6,12 +6,12 @@ use s3::region::Region;
 use crate::to_server_fn_error;
 
 pub async fn get_bucket() -> Result<Bucket, ServerFnError> {
-    let bucket_name = dotenv::var("S3_BUCKET_NAME").expect("should be present");
-    let endpoint = dotenv::var("S3_ENDPOINT").expect("should be present");
-    let region = dotenv::var("S3_REGION").expect("should be present");
+    let bucket_name = dotenvy::var("S3_BUCKET_NAME").expect("should be present");
+    let endpoint = dotenvy::var("S3_ENDPOINT").expect("should be present");
+    let region = dotenvy::var("S3_REGION").expect("should be present");
     let region = Region::Custom { region, endpoint };
-    let access_key = dotenv::var("S3_ACCESS_KEY").expect("should be present");
-    let secret_key = dotenv::var("S3_SECRET_KEY").expect("should be present");
+    let access_key = dotenvy::var("S3_ACCESS_KEY").expect("should be present");
+    let secret_key = dotenvy::var("S3_SECRET_KEY").expect("should be present");
     let credentials = Credentials::new(Some(&access_key), Some(&secret_key), None, None, None)
         .expect("should work");
     let bucket = Bucket::new(&bucket_name, region, credentials);

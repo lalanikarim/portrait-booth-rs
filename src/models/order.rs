@@ -387,11 +387,11 @@ impl Order {
     }
 
     pub fn get_unit_price() -> Result<(u64, u64), ServerFnError> {
-        let unit_price = dotenv::var("PHOTO_UNIT_PRICE")
+        let unit_price = dotenvy::var("PHOTO_UNIT_PRICE")
             .unwrap_or("5".into())
             .parse()
             .map_err(|e| crate::to_server_fn_error(e));
-        let zero_price = dotenv::var("PHOTO_ZERO_PRICE")
+        let zero_price = dotenvy::var("PHOTO_ZERO_PRICE")
             .unwrap_or("5".into())
             .parse()
             .map_err(|e| crate::to_server_fn_error(e));
