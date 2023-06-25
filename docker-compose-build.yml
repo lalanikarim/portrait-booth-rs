@@ -5,6 +5,8 @@ services:
     build:
       dockerfile: rust-build-debian.dockerfile
       #dockerfile: rust-build-alpine.dockerfile
+      args:
+        - output_name=portrait-booth
     ports:
       - "8080:8080"
     volumes:

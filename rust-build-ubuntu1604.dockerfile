@@ -16,6 +16,8 @@ RUN ls -l /app/target;
 
 FROM ubuntu:16.04 as runner
 #FROM rust:1.70-slim-bookworm as runner
+RUN apt update; \
+    apt install -y libssl1.0.0;
 COPY --from=builder /app/target/server/release/portrait-booth /app/
 COPY --from=builder /app/target/site /app/site
 COPY --from=builder /app/Cargo.toml /app/
@@ -26,6 +28,8 @@ ENV RUST_LOG="info"
 ENV APP_ENVIRONMENT="production"
 ENV LEPTOS_SITE_ADDR="0.0.0.0:8080"
 ENV LEPTOS_SITE_ROOT="site"
+ARG output_name=portrait-booth
+ENV LEPTOS_OUTPUT_NAME=${output_name}
 EXPOSE 8080
-CMD ["sh","-c","/app/$LEPTOS_OUTPUT_NAME"]
+CMD ["sh","-c","/app/${LEPTOS_OUTPUT_NAME}"]
 

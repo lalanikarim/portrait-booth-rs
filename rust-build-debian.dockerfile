@@ -23,6 +23,8 @@ ENV RUST_LOG="info"
 ENV APP_ENVIRONMENT="production"
 ENV LEPTOS_SITE_ADDR="0.0.0.0:8080"
 ENV LEPTOS_SITE_ROOT="site"
+ARG output_name=portrait_booth
+ENV LEPTOS_OUTPUT_NAME=${output_name}
 EXPOSE 8080
-CMD ["sh","-c","/app/$LEPTOS_OUTPUT_NAME"]
+CMD ["sh","-c","/app/${LEPTOS_OUTPUT_NAME}"]
 
