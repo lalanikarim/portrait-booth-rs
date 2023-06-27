@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+pub mod cashier_actions;
 pub mod confirmation;
 pub mod create_order;
+pub mod customer_actions;
+pub mod manager_actions;
+pub mod operator_actions;
 pub mod order_details;
 pub mod order_list;
 pub mod order_search;

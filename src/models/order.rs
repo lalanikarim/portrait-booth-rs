@@ -207,14 +207,14 @@ impl Order {
                     .map_err(|e| to_server_fn_error(e))
     }
     pub async fn collect_payment_cash(
-        &self,
-        cashier_id: i64,
+        id: u64,
+        cashier_id: u64,
         pool: &MySqlPool,
     ) -> Result<bool, ServerFnError> {
         sqlx::query!("UPDATE `orders` SET cashier_id = ?,  status = ? WHERE id = ? and status = ? and mode_of_payment = ?",
                     cashier_id,
                     OrderStatus::Paid as i32,
-                    self.id,
+                    id,
                     OrderStatus::PaymentPending as i32,
                     PaymentMode::Cash as i32)
                     .execute(pool)

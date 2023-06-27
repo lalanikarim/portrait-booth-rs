@@ -2,19 +2,42 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
-use crate::components::{
-    home_page::HomePage,
-    login::Login,
-    login_otp::LoginOtp,
-    orders::{confirmation::Confirmation, order_search::OrderSearch},
-    signup::Signup,
+use crate::{
+    components::{
+        home_page::HomePage,
+        login::Login,
+        login_otp::LoginOtp,
+        orders::{confirmation::Confirmation, order_search::OrderSearch},
+        signup::Signup,
+    },
+    models::user::User,
 };
+
+#[server(GetLoggedInUser, "/api")]
+pub async fn get_logged_in_user(cx: Scope) -> Result<Option<User>, ServerFnError> {
+    let auth = crate::auth::auth(cx).expect("Auth should be present");
+    Ok(auth.current_user)
+}
+
+pub type AuthUser = Signal<Option<User>>;
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context(cx);
-
+    let user = create_resource(
+        cx,
+        || (),
+        move |_| async move { get_logged_in_user(cx).await },
+    );
+    let user = Signal::derive(cx, move || {
+        if let Some(Ok(user)) = user.read(cx) {
+            user
+        } else {
+            None
+        }
+    });
+    provide_context::<AuthUser>(cx, user);
     view! { cx,
         <Stylesheet id="leptos" href="/pkg/portrait-booth.css"/>
         <Title text="Welcome to Leptos"/>
