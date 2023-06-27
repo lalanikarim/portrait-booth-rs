@@ -749,6 +749,135 @@
     },
     "query": "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where id = ?"
   },
+  "df433190129839a13b3112c8a074529cce4a7148f6f1328fdf9fccfb5c5b9306": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "phone",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "id",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "no_of_photos",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "status:_",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "customer_id",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4137
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "order_total",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "mode_of_payment:_",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select u.name, u.email, u.phone, o.id,o.no_of_photos,o.status as `status:_`,o.customer_id,o.order_total,o.mode_of_payment as `mode_of_payment:_`\n            from orders o inner join users u on o.customer_id = u.id where o.id = ?"
+  },
   "df99e455ca8b2c500a29626d0fdaa37f3fec3044cf1cefbb51e5ab3bf6419fb5": {
     "describe": {
       "columns": [],
@@ -804,7 +933,7 @@
     },
     "query": "SELECT COUNT(1) FROM `users` where email = ?"
   },
-  "fe8b10f645015eff04bf8c3db7e6b6ac4e9760e0484187435d1119ed48d32497": {
+  "fa38e0338dac03dc04b83f8bdf4ca193ef607f1d636a81657c14534b6b39d024": {
     "describe": {
       "columns": [
         {
@@ -832,44 +961,8 @@
           }
         },
         {
-          "name": "cashier_id",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 40
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "operator_id",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 40
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "processor_id",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 40
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
           "name": "no_of_photos",
-          "ordinal": 5,
+          "ordinal": 2,
           "type_info": {
             "char_set": 63,
             "flags": {
@@ -881,7 +974,7 @@
         },
         {
           "name": "order_total",
-          "ordinal": 6,
+          "ordinal": 3,
           "type_info": {
             "char_set": 63,
             "flags": {
@@ -893,7 +986,7 @@
         },
         {
           "name": "mode_of_payment:_",
-          "ordinal": 7,
+          "ordinal": 4,
           "type_info": {
             "char_set": 63,
             "flags": {
@@ -904,7 +997,43 @@
           }
         },
         {
-          "name": "order_ref",
+          "name": "status:_",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "name",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "phone",
           "ordinal": 8,
           "type_info": {
             "char_set": 224,
@@ -914,67 +1043,15 @@
             "max_size": 1020,
             "type": "VarString"
           }
-        },
-        {
-          "name": "payment_ref",
-          "ordinal": 9,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 0
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "status:_",
-          "ordinal": 10,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 4,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "created_at",
-          "ordinal": 11,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4225
-            },
-            "max_size": 19,
-            "type": "Datetime"
-          }
-        },
-        {
-          "name": "payment_at",
-          "ordinal": 12,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 19,
-            "type": "Datetime"
-          }
         }
       ],
       "nullable": [
         false,
         false,
-        true,
-        true,
-        true,
         false,
         false,
         false,
-        true,
-        true,
+        false,
         false,
         false,
         true
@@ -983,7 +1060,7 @@
         "Right": 1
       }
     },
-    "query": "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where customer_id = ?"
+    "query": "SELECT o.id, o.customer_id, o.no_of_photos, o.order_total, o.mode_of_payment as `mode_of_payment:_`, o.status as `status:_`, u.name, u.email, u.phone FROM `orders` o inner join `users` u where o.customer_id = u.id and u.id = ?"
   },
   "fedf0151c32bd89574a1495737da2a354c5214fd23386e242a6086cd41123330": {
     "describe": {
