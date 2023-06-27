@@ -2,7 +2,7 @@ use leptos::*;
 
 use crate::{
     components::orders::{order_details::OrderDetails, order_list::OrderList, UnitPrice},
-    models::order::Order,
+    models::{order::Order, user_order::UserOrder},
 };
 #[server(GetUnitPrice, "/api")]
 pub async fn get_unit_price() -> Result<(u64, u64), ServerFnError> {
@@ -10,7 +10,7 @@ pub async fn get_unit_price() -> Result<(u64, u64), ServerFnError> {
 }
 #[component]
 pub fn OrdersView(cx: Scope) -> impl IntoView {
-    let (order, set_order) = create_signal::<Option<Order>>(cx, None);
+    let (order, set_order) = create_signal::<Option<UserOrder>>(cx, None);
     let unit_price_resource = create_resource(
         cx,
         || (),

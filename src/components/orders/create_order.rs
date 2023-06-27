@@ -1,6 +1,6 @@
 use leptos::{ev::SubmitEvent, *};
 
-use crate::models::order::Order;
+use crate::models::user_order::UserOrder;
 
 use super::UnitPrice;
 
@@ -8,7 +8,7 @@ use super::UnitPrice;
 pub async fn create_order_request(
     cx: Scope,
     no_of_photos: u64,
-) -> Result<Option<Order>, ServerFnError> {
+) -> Result<Option<UserOrder>, ServerFnError> {
     if no_of_photos < 1 || no_of_photos > 3 {
         return Err(ServerFnError::Args(
             "Only 1, 2, or 3 photos can be ordered".into(),
@@ -20,12 +20,18 @@ pub async fn create_order_request(
     let User {
         id: customer_id, ..
     } = auth.current_user.expect("No logged in user");
-    Order::create(customer_id, no_of_photos, &pool).await
+    match Order::create(customer_id, no_of_photos, &pool).await {
+        Err(e) => Err(e),
+        Ok(None) => Ok(None),
+        Ok(Some(order)) => UserOrder::get_by_order_id(order.id, &pool)
+            .await
+            .map(|o| Some(o)),
+    }
 }
 
 #[component]
 pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
-    let set_order = use_context::<WriteSignal<Option<Order>>>(cx)
+    let set_order = use_context::<WriteSignal<Option<UserOrder>>>(cx)
         .expect("Set_order write signal should be present");
     let (error, set_error) = create_signal(cx, "".to_string());
     let (no_of_pics, set_no_of_pics) = create_signal(cx, None);

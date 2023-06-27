@@ -5,7 +5,10 @@ use crate::{
         file_list::FileList,
         uploader::{Uploader, UploaderMode},
     },
-    models::order::{Order, OrderStatus},
+    models::{
+        order::{Order, OrderStatus},
+        user_order::UserOrder,
+    },
 };
 
 #[server(DeleteOrderRequest, "/api")]
@@ -50,8 +53,8 @@ pub async fn start_stripe_payment_request(
     }
 }
 #[component]
-pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
-    let set_order = use_context::<WriteSignal<Option<Order>>>(cx)
+pub fn OrderDetails(cx: Scope, order: UserOrder) -> impl IntoView {
+    let set_order = use_context::<WriteSignal<Option<UserOrder>>>(cx)
         .expect("Set_order write signal should be present");
     let delete_order_action = create_server_action::<DeleteOrderRequest>(cx);
     let delete_conf_ref: NodeRef<Dialog> = create_node_ref(cx);
@@ -84,16 +87,34 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
     view! { cx,
         <div class="container">
             <h2 class="header">"Order Details"</h2>
-            <dl>
-                <dt>"Order #"</dt>
-                <dd>{order.id}</dd>
-                <dt>"No of Photos"</dt>
-                <dd>{order.no_of_photos}</dd>
-                <dt>"Order total"</dt>
-                <dd>"$" {order.order_total}</dd>
-                <dt>"Status"</dt>
-                <dd>{format!("{:?}",order.status)}</dd>
-            </dl>
+            <div class="flex flex-row text-left">
+                <div class="w-1/2">"Order #"</div>
+                <div class="">{order.id}</div>
+            </div>
+            <div class="flex flex-row text-left">
+                <div class="w-1/2">"No of Photos"</div>
+                <div>{order.no_of_photos}</div>
+            </div>
+            <div class="flex flex-row text-left">
+                <div class="w-1/2">"Order total"</div>
+                <div>"$" {order.order_total}</div>
+            </div>
+            <div class="flex flex-row text-left">
+                <div class="w-1/2">"Name"</div>
+                <div>{order.name.clone()}</div>
+            </div>
+            <div class="flex flex-row text-left">
+                <div class="w-1/2">"Email"</div>
+                <div>{order.email.clone()}</div>
+            </div>
+            <div class="flex flex-row text-left">
+                <div class="w-1/2">"Phone"</div>
+                <div>{order.phone.clone().unwrap_or("".to_string())}</div>
+            </div>
+            <div class="flex flex-row text-left">
+                <div class="w-1/2">"Status"</div>
+                <div>{format!("{:?}", order.status)}</div>
+            </div>
             <button class="m-1" type="button" on:click=move |_| set_order.update(|o| *o = None)>
                 "Back"
             </button>
@@ -173,7 +194,5 @@ pub fn OrderDetails(cx: Scope, order: Order) -> impl IntoView {
                 }
             </Suspense>
         </div>
-        <FileList order=order_clone.clone() mode=UploaderMode::Original/>
-        <Uploader order=order_clone.clone() mode=UploaderMode::Original/>
     }
 }

@@ -77,6 +77,10 @@
         my-5 mx-auto max-w-md text-center shadow-lg rounded-md p-6 bg-white
   }
 
+  div.container-lg {
+    @apply
+        my-5 mx-auto max-w-xl text-center shadow-lg rounded-md p-6 bg-white
+  }
   div.left-justified {
     @apply
       text-left

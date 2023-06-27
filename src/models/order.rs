@@ -1,6 +1,8 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
+use super::user_order::UserOrder;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::{FromRow, Type};
@@ -75,10 +77,10 @@ impl Order {
     pub async fn get_orders_for_customer(
         customer_id: u64,
         pool: &MySqlPool,
-    ) -> Result<Vec<Self>, ServerFnError> {
+    ) -> Result<Vec<UserOrder>, ServerFnError> {
         let result = sqlx::query_as!(
-            Self,
-            "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where customer_id = ?",
+            UserOrder,
+            "SELECT o.id, o.customer_id, o.no_of_photos, o.order_total, o.mode_of_payment as `mode_of_payment:_`, o.status as `status:_`, u.name, u.email, u.phone FROM `orders` o inner join `users` u where o.customer_id = u.id and u.id = ?",
             customer_id
         )
         .fetch_all(pool)

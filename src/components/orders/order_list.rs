@@ -2,11 +2,11 @@ use leptos::{ev::MouseEvent, *};
 
 use crate::{
     components::orders::create_order::CreateOrder,
-    models::order::{Order, OrderStatus},
+    models::{order::OrderStatus, user_order::UserOrder},
 };
 
 #[server(GetOrdersRequest, "/api")]
-pub async fn get_orders_request(cx: Scope) -> Result<Vec<Order>, ServerFnError> {
+pub async fn get_orders_request(cx: Scope) -> Result<Vec<UserOrder>, ServerFnError> {
     let pool = crate::pool(cx).expect("Pool should exist");
     let auth = crate::auth::auth(cx).expect("Auth should exist");
     let current_user = auth.current_user.expect("Authenticated User should exist");
@@ -74,8 +74,8 @@ pub fn OrderList(cx: Scope) -> impl IntoView {
 }
 
 #[component]
-pub fn OrderRow(cx: Scope, order: Order) -> impl IntoView {
-    let set_order = use_context::<WriteSignal<Option<Order>>>(cx)
+pub fn OrderRow(cx: Scope, order: UserOrder) -> impl IntoView {
+    let set_order = use_context::<WriteSignal<Option<UserOrder>>>(cx)
         .expect("Set_order write signal should be present");
     let o = order.clone();
     let on_click = move |_ev: MouseEvent| {

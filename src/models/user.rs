@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use super::user_order::UserOrder;
+
 impl Default for Role {
     fn default() -> Self {
         Role::Customer
@@ -110,7 +112,7 @@ impl User {
         .map_err(|e| to_server_fn_error(e))
     }
 
-    pub async fn orders(&self, pool: &MySqlPool) -> Result<Vec<Order>, ServerFnError> {
+    pub async fn orders(&self, pool: &MySqlPool) -> Result<Vec<UserOrder>, ServerFnError> {
         Order::get_orders_for_customer(self.id, pool).await
     }
 }
