@@ -49,11 +49,12 @@ web-sys = { version = "0.3.64", features = ["ReadableStream", "File", "Blob", "D
 js-sys = "0.3.64"
 wasm-bindgen-futures = "0.4.37"
 lettre = { version = "0.10.4", default-features = false, features = ["tokio1-rustls-tls","smtp-transport","builder","tokio1"], optional = true }
+openssl = { version = "0.10", features = ["vendored"], optional = true }
 
 [features]
 default = ["ssr"]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate", "dep:dummy-macros"]
-ssr = ["dep:axum", "dep:tokio", "dep:tower", "dep:tower-http", "dep:leptos_axum", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:tracing", "dep:rand", "dep:sqlx", "dep:axum_session", "dep:axum_session_auth", "dep:bcrypt", "dep:totp-rs", "dep:regex", "dep:async-stripe", "dep:base64", "dep:dotenvy", "dep:rust-s3", "dep:lettre"]
+ssr = ["dep:axum", "dep:tokio", "dep:tower", "dep:tower-http", "dep:leptos_axum", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:tracing", "dep:rand", "dep:sqlx", "dep:axum_session", "dep:axum_session_auth", "dep:bcrypt", "dep:totp-rs", "dep:regex", "dep:async-stripe", "dep:base64", "dep:dotenvy", "dep:rust-s3", "dep:lettre", "dep:openssl"]
 
 [package.metadata.cargo-all-features]
 denylist = [
