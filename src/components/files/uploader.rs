@@ -17,7 +17,7 @@ pub enum FileUploadState {
     Error,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
 pub enum UploaderMode {
     Original,
     Thumbnail,

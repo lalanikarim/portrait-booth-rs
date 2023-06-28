@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::order::{OrderStatus, PaymentMode};
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, PartialEq)]
 pub struct UserOrder {
     pub id: u64,
     pub name: String,
