@@ -1,11 +1,11 @@
 use crate::{
-    components::app::{get_logged_in_user, AuthUser},
-    models::{
-        order::{Order, OrderStatus},
-        user_order::UserOrder,
-    },
+    components::app::AuthUser,
+    models::{order::OrderStatus, user_order::UserOrder},
 };
 use leptos::{html::Dialog, *};
+
+#[cfg(feature = "ssr")]
+use crate::models::order::Order;
 
 #[server(DeleteOrderRequest, "/api")]
 pub async fn delete_order_request(cx: Scope, order_id: u64) -> Result<bool, ServerFnError> {

@@ -2,8 +2,12 @@ use leptos::*;
 
 use crate::{
     components::orders::{order_details::OrderDetails, order_list::OrderList, UnitPrice},
-    models::{order::Order, user_order::UserOrder},
+    models::user_order::UserOrder,
 };
+
+#[cfg(feature = "ssr")]
+use crate::models::order::Order;
+
 #[server(GetUnitPrice, "/api")]
 pub async fn get_unit_price() -> Result<(u64, u64), ServerFnError> {
     Order::get_unit_price()

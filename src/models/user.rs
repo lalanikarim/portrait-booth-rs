@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use super::user_order::UserOrder;
-
 impl Default for Role {
     fn default() -> Self {
         Role::Customer
@@ -19,6 +17,7 @@ cfg_if::cfg_if! {
         use sqlx::{FromRow, Type};
         use leptos::ServerFnError;
         use crate::server::to_server_fn_error;
+        use super::user_order::UserOrder;
     } else {
         use dummy_macros::*;
     }

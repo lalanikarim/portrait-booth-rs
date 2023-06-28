@@ -4,7 +4,7 @@ use web_sys::MouseEvent;
 use crate::{
     components::app::AuthUser,
     models::{
-        order::{Order, OrderStatus, PaymentMode},
+        order::{OrderStatus, PaymentMode},
         user::Role,
         user_order::UserOrder,
     },
@@ -22,7 +22,7 @@ pub async fn mark_paid_request(cx: Scope, order_id: u64) -> Result<UserOrder, Se
             "Only Manager or Cashier can collect payment".to_string(),
         ));
     }
-    match Order::collect_payment_cash(order_id, user.id, &pool).await {
+    match crate::models::order::Order::collect_payment_cash(order_id, user.id, &pool).await {
         Err(e) => Err(e),
         Ok(false) => Err(ServerFnError::ServerError(
             "Unable to save changes to order".to_string(),
