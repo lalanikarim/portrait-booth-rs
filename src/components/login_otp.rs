@@ -1,7 +1,6 @@
+use crate::server;
 use leptos::{ev::SubmitEvent, html::Input, *};
 use leptos_router::*;
-
-use crate::server;
 
 #[server(LoginOtpRequest, "/api")]
 pub async fn login_otp_request(cx: Scope, email: String) -> Result<(), ServerFnError> {
@@ -10,6 +9,7 @@ pub async fn login_otp_request(cx: Scope, email: String) -> Result<(), ServerFnE
     let result = sqlx::query_scalar!("SELECT otp_secret FROM users WHERE email = ?", email)
         .fetch_one(&pool)
         .await;
+    log!("Received Email: {email:?}");
     if let Ok(Some(otp_secret)) = result {
         let totp_dur = crate::get_totp_duration();
         let totp = TOTP::new(
@@ -36,6 +36,7 @@ pub async fn login_otp_verify_request(
     use totp_rs::*;
     let pool = crate::pool(cx).expect("Pool should be present");
     let auth = crate::auth::auth(cx).expect("Auth should be present");
+    log!("Received Email: {email:?}");
     let result =
         sqlx::query_as::<_, crate::models::user::User>("SELECT * FROM users WHERE email = ?")
             .bind(email)
@@ -132,6 +133,19 @@ pub fn LoginOtp(
             set_email_error.update(|e| *e = "Enter a valid email");
         }
     };
+    create_effect(cx, move |_| {
+        let password = password_input.get();
+        if let Some(password) = password {
+            password.set_autofocus(true);
+            set_timeout(
+                move || {
+                    log!("Setting focus");
+                    _ = password.focus();
+                },
+                std::time::Duration::from_secs(2),
+            );
+        }
+    });
     view! { cx,
         <div class="container">
             <h2 class="header">"Login with Code"</h2>

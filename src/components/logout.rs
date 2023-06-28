@@ -1,5 +1,7 @@
 use leptos::*;
 use leptos_router::use_navigate;
+
+use super::app::AuthUser;
 #[server(LogoutRequest, "/api")]
 pub async fn logout_request(cx: Scope) -> Result<(), ServerFnError> {
     let auth = crate::auth::auth(cx).expect("Auth should be present");
@@ -9,9 +11,12 @@ pub async fn logout_request(cx: Scope) -> Result<(), ServerFnError> {
 
 #[component]
 pub fn Logout(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) -> impl IntoView {
+    let set_auth_user =
+        use_context::<WriteSignal<AuthUser>>(cx).expect("Set Auth User should be present");
     let on_click = move |_| {
         spawn_local(async move {
             if let Ok(_) = logout_request(cx).await {
+                set_auth_user.set(None);
                 let navigate = use_navigate(cx);
                 _ = navigate("/", Default::default());
                 if let Some(completed) = completed {

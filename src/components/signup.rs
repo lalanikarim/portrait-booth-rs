@@ -123,12 +123,15 @@ pub fn signup(
                         SignupResponse::Success => {
                             if otp_on_success {
                                 let SignupForm { email, .. } = form;
-                                let otp_route =
-                                    format!("/otp?email={}&show_email=false", email.clone());
+                                let url = format!(
+                                    "/otp?email={}&show_email=false",
+                                    email.replace("+", "%2b")
+                                );
+                                log!("url: {url}");
                                 let login_otp_request_action =
                                     create_server_action::<LoginOtpRequest>(cx);
                                 login_otp_request_action.dispatch(LoginOtpRequest { email });
-                                _ = navigate(otp_route.as_str(), Default::default());
+                                _ = navigate(url.as_str(), Default::default());
                             } else {
                                 _ = navigate("/", Default::default());
                                 if let Some(completed) = completed {

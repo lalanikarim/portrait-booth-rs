@@ -2,7 +2,7 @@ use leptos::{ev::MouseEvent, *};
 use leptos_router::*;
 use serde::{Deserialize, Serialize};
 
-use crate::models::order::Order;
+use crate::{components::loading::Loading, models::order::Order};
 
 #[server(StoreStripeConfirmation, "/api")]
 pub async fn store_stripe_confirmation(
@@ -67,12 +67,12 @@ pub fn Confirmation(cx: Scope) -> impl IntoView {
         <div class="container">
             <h2 class="header">"Payment Confirmation"</h2>
             <Suspense fallback=move || {
-                view! { cx, <div>"Loading..."</div> }
+                view! { cx, <Loading /> }
             }>
                 {move || {
                     match order_resource.read(cx) {
                         None => {
-                            view! { cx, <div>"Loading..."</div> }
+                            view! { cx, <Loading /> }
                                 .into_view(cx)
                         }
                         Some(response) => {

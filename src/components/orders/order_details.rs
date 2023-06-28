@@ -3,6 +3,9 @@ use leptos::*;
 use crate::{
     components::{
         app::AuthUser,
+        loading::Loading,
+        not_authorized::NotAuthorized,
+        not_ready::NotReady,
         orders::{cashier_actions::CashierActions, customer_actions::CustomerActions},
     },
     models::{order::OrderStatus, user::Role, user_order::UserOrder},
@@ -10,14 +13,14 @@ use crate::{
 
 #[component]
 pub fn OrderDetails(cx: Scope, order: UserOrder) -> impl IntoView {
-    let auth_user = use_context::<AuthUser>(cx).expect("AuthUser should be present");
+    let auth_user = use_context::<ReadSignal<AuthUser>>(cx).expect("AuthUser should be present");
     let Some(user) = auth_user.get() else {
-        return view!{cx, <div class="red">"Not Logged in..."</div>};
+        return view!{cx, <NotReady /> }.into_view(cx);
     };
     if user.id != order.customer_id
         && ![Role::Cashier, Role::Operator, Role::Manager].contains(&user.role)
     {
-        return view! { cx, <div class="red">"Not Authorized..."</div> };
+        return view! { cx, <NotAuthorized /> }.into_view(cx);
     }
     let set_order = use_context::<WriteSignal<Option<UserOrder>>>(cx)
         .expect("Set_order write signal should be present");
@@ -62,11 +65,12 @@ pub fn OrderDetails(cx: Scope, order: UserOrder) -> impl IntoView {
                 "Back"
             </button>
             <Suspense fallback=move || {
-                view! { cx, <div>"Loading..."</div> }
+                view! { cx, <Loading /> }
             }>
                 <CustomerActions order=order.clone()/>
                 <CashierActions order=order.clone()/>
             </Suspense>
         </div>
     }
+    .into_view(cx)
 }

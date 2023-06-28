@@ -1,3 +1,4 @@
+use crate::components::loading::Loading;
 use crate::models::order::OrderStatus;
 use crate::models::user_order::OrderSearchForm;
 use crate::models::user_order::UserOrder;
@@ -87,7 +88,7 @@ pub fn OrderSearch(cx: Scope) -> impl IntoView {
         <div class="container-lg">
             <h2 class="header">"Search Results"</h2>
             <Suspense fallback=move || {
-                view! { cx, <div>"Loading..."</div> }
+                view! { cx, <Loading /> }
             }>
                 {move || {
                     let result = order_search_action.value().get();

@@ -3,10 +3,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::{
-        login::Login, login_otp::LoginOtp, logout::Logout, orders::orders_view::OrdersView,
+        app::AuthUser,
+        loading::Loading,
+        login::Login,
+        login_otp::LoginOtp,
+        logout::Logout,
+        orders::{order_search::OrderSearch, orders_view::OrdersView},
         signup::Signup,
+        view_selector::ViewSelector,
     },
-    models::user::User,
+    models::user::{Role, User},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,8 +39,18 @@ pub async fn home_page_request(cx: Scope) -> Result<HomePageResponse, ServerFnEr
     response
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub enum HomePageViews {
+    MyOrders,
+    SearchOrders,
+    ProcessOrders,
+}
+
 #[component]
 pub fn HomePage(cx: Scope) -> impl IntoView {
+    let set_auth_user =
+        use_context::<WriteSignal<AuthUser>>(cx).expect("Set Auth User should be present");
+    let (show_view, set_show_view) = create_signal(cx, HomePageViews::MyOrders);
     let completed = create_action(cx, |()| async {});
     let (active_view, set_active_view) = create_signal(cx, ActiveView::Login);
     let home_page_resource = create_resource(
@@ -42,16 +58,17 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
         move || (completed.version().get(),),
         move |_| async move { home_page_request(cx).await },
     );
+    provide_context::<WriteSignal<HomePageViews>>(cx, set_show_view);
     view! { cx,
         <h1 class="p6 text-4xl">"Portrait Booth"</h1>
-        <Suspense fallback=move || {
-            view! { cx, <div>"Loading..."</div> }
+        <Transition fallback=move || {
+            view! { cx, <Loading/> }
         }>
             {move || {
                 let response = home_page_resource.read(cx);
                 match response {
                     None => {
-                        view! { cx, <div>"Loading..."</div> }
+                        view! { cx, <Loading/> }
                             .into_view(cx)
                     }
                     Some(response) => {
@@ -61,16 +78,36 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                     .into_view(cx)
                             }
                             Ok(HomePageResponse::LoggedIn(user)) => {
+                                set_auth_user.set(Some(user.clone()));
+                                let user_name = if user.role == Role::Customer
+                                    || user.role == Role::Anonymous
+                                {
+                                    user.name
+                                } else {
+                                    format!("{:?} ({:?})", user.name, user.role)
+                                };
+                                let home_page_view = match show_view.get() {
+                                    HomePageViews::MyOrders => {
+                                        view! { cx, <OrdersView/> }
+                                    }
+                                    HomePageViews::SearchOrders => {
+                                        view! { cx, <OrderSearch/> }
+                                    }
+                                    HomePageViews::ProcessOrders => todo!(),
+                                };
                                 view! { cx,
-                                    <div>"Logged in: " {user.name}</div>
-                                    <Logout completed=completed/>
-                                    <OrdersView/>
+                                    <div>"Logged in: " {user_name}</div>
+                                    <div class="px-6 pt-2 mx-auto max-w-md flex flex-row justify-evenly">
+                                        <ViewSelector/>
+                                        <Logout completed=completed/>
+                                    </div>
+                                    {home_page_view}
                                 }
                                     .into_view(cx)
                             }
                             Ok(HomePageResponse::NotLoggedIn) => {
+                                set_auth_user.set(None);
                                 view! { cx,
-                                    <div>"Not Logged In Response"</div>
                                     <div class="container">
                                         <div class="flex flex-row justify-between">
                                             <div style:display=move || if active_view.get() == ActiveView::Login { "none" } else { "inline-block" }>
@@ -123,6 +160,6 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                     }
                 }
             }}
-        </Suspense>
+        </Transition>
     }
 }

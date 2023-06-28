@@ -33,9 +33,9 @@ pub async fn mark_paid_request(cx: Scope, order_id: u64) -> Result<UserOrder, Se
 
 #[component]
 pub fn CashierActions(cx: Scope, order: UserOrder) -> impl IntoView {
-    let auth_user = use_context::<AuthUser>(cx).expect("AuthUser should exist");
+    let auth_user = use_context::<ReadSignal<AuthUser>>(cx).expect("AuthUser should exist");
     if let Some(user) = auth_user.get() {
-        if user.role != Role::Cashier {
+        if user.role != Role::Cashier && user.role != Role::Manager {
             return view! {cx,<div />}.into_view(cx);
         }
     }

@@ -50,7 +50,8 @@ pub async fn start_stripe_payment_request(
 }
 #[component]
 pub fn CustomerActions(cx: Scope, order: UserOrder) -> impl IntoView {
-    let auth_user = use_context::<AuthUser>(cx).expect("AuthUser should be present");
+    let auth_user = use_context::<ReadSignal<AuthUser>>(cx).expect("AuthUser should be present");
+    log!("User: {:#?}, Order: {order:#?}", auth_user.get());
     if let Some(user) = auth_user.get() {
         if user.id != order.customer_id {
             return view! {cx,<div />}.into_view(cx);

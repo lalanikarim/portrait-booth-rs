@@ -1,6 +1,6 @@
 use leptos::{ev::SubmitEvent, *};
 
-use crate::models::user_order::UserOrder;
+use crate::{components::loading::Loading, models::user_order::UserOrder};
 
 use super::UnitPrice;
 
@@ -78,7 +78,7 @@ pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
             {move || {
                 match unit_price_resource.read(cx) {
                     None => {
-                        view! { cx, <div>"Loading..."</div> }
+                        view! { cx, <Loading /> }
                             .into_view(cx)
                     }
                     Some(p) => {

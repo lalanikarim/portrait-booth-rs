@@ -1,6 +1,9 @@
 use leptos::*;
 
-use crate::{components::files::uploader::UploaderMode, models::order::Order};
+use crate::{
+    components::{files::uploader::UploaderMode, loading::Loading},
+    models::order::Order,
+};
 
 #[server(GetFiles, "/api")]
 pub async fn get_files(cx: Scope, prefix: String) -> Result<Vec<String>, ServerFnError> {
@@ -51,11 +54,11 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         <div class="container">
             <h2 class="header">"Files"</h2>
             <Suspense fallback=move || {
-                view! { cx, <div>"Loading..."</div> }
+                view! { cx, <Loading /> }
             }><div class="left-justified">
                 {move || match get_files_resource.read(cx) {
                     None => {
-                        view! { cx, <div>"Loading..."</div> }
+                        view! { cx, <Loading /> }
                             .into_view(cx)
                     }
                     Some(files) => {
