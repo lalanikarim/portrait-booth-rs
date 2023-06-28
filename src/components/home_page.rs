@@ -8,7 +8,7 @@ use crate::{
         login::Login,
         login_otp::LoginOtp,
         logout::Logout,
-        orders::{order_search::OrderSearch, orders_view::OrdersView},
+        orders::{orders_view::OrdersView, search_view::SearchView},
         signup::Signup,
         view_selector::ViewSelector,
     },
@@ -91,7 +91,7 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                         view! { cx, <OrdersView/> }
                                     }
                                     HomePageViews::SearchOrders => {
-                                        view! { cx, <OrderSearch/> }
+                                        view! { cx, <SearchView/> }
                                     }
                                     HomePageViews::ProcessOrders => todo!(),
                                 };
