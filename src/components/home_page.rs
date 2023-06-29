@@ -7,8 +7,17 @@ use crate::{
         auth::signup::Signup, orders::orders_view::OrdersView, search::search_view::SearchView,
         util::loading::Loading, util::view_selector::ViewSelector,
     },
-    models::user::{Role, User},
+    models::{
+        pricing::Pricing,
+        user::{Role, User},
+    },
 };
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "ssr")] {
+        use crate::models::order::Order;
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum HomePageResponse {
@@ -23,6 +32,10 @@ pub enum ActiveView {
     Signup,
 }
 
+#[server(GetUnitPrice, "/api")]
+pub async fn get_unit_price() -> Result<Pricing, ServerFnError> {
+    Order::get_unit_price()
+}
 #[server(HomePageRequest, "/api")]
 pub async fn home_page_request(cx: Scope) -> Result<HomePageResponse, ServerFnError> {
     let auth = crate::auth::auth(cx).expect("Auth should be present");
@@ -54,6 +67,9 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
         move |_| async move { home_page_request(cx).await },
     );
     provide_context::<WriteSignal<HomePageViews>>(cx, set_show_view);
+    let unit_price_resource =
+        create_resource(cx, || (), move |_| async move { get_unit_price().await });
+    provide_context(cx, unit_price_resource);
     view! { cx,
         <h1 class="p6 text-4xl">"Portrait Booth"</h1>
         <Transition fallback=move || {

@@ -1,14 +1,13 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-use super::pricing::Pricing;
-
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::{FromRow, Type};
         use crate::models::order_item::OrderItem;
         use crate::server::to_server_fn_error;
         use super::user_order::UserOrder;
+        use super::pricing::Pricing;
     } else {
 
         use dummy_macros::*;
