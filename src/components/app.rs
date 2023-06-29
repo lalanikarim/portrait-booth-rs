@@ -2,13 +2,11 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
+use crate::components::orders::confirmation::Confirmation;
 use crate::{
     components::{
-        home_page::HomePage,
-        login::Login,
-        login_otp::LoginOtp,
-        orders::{confirmation::Confirmation, order_search::OrderSearch},
-        signup::Signup,
+        auth::login::Login, auth::login_otp::LoginOtp, auth::signup::Signup, home_page::HomePage,
+        search::order_search::OrderSearch,
     },
     models::user::User,
 };

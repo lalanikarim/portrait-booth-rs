@@ -3,13 +3,14 @@ use leptos::*;
 use crate::{
     components::{
         app::AuthUser,
-        empty_view::EmptyView,
         files::{
             file_list::FileList,
             uploader::{Uploader, UploaderMode},
         },
-        loading::Loading,
-        orders::{order_details::OrderDetails, order_search::OrderSearch},
+        orders::order_details::OrderDetails,
+        search::order_search::OrderSearch,
+        util::empty_view::EmptyView,
+        util::loading::Loading,
     },
     models::{
         order::{Order, OrderStatus},

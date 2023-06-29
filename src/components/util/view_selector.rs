@@ -1,8 +1,9 @@
 use leptos::*;
 
-use crate::{components::empty_view::EmptyView, models::user::Role};
-
-use super::{app::AuthUser, home_page::HomePageViews};
+use crate::{
+    components::{app::AuthUser, home_page::HomePageViews, util::empty_view::EmptyView},
+    models::user::Role,
+};
 
 #[component]
 pub fn ViewSelector(cx: Scope) -> impl IntoView {

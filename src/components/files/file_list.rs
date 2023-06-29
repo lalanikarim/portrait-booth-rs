@@ -1,7 +1,7 @@
 use leptos::*;
 
 use crate::{
-    components::{files::uploader::UploaderMode, loading::Loading},
+    components::{files::uploader::UploaderMode, util::loading::Loading},
     models::order::Order,
 };
 

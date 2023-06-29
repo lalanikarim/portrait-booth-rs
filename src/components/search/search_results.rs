@@ -2,7 +2,7 @@ use leptos::*;
 use web_sys::MouseEvent;
 
 use crate::{
-    components::loading::Loading,
+    components::util::loading::Loading,
     models::{order::OrderStatus, user_order::UserOrder},
 };
 

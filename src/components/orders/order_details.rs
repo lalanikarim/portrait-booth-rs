@@ -3,10 +3,12 @@ use leptos::*;
 use crate::{
     components::{
         app::AuthUser,
-        loading::Loading,
-        not_authorized::NotAuthorized,
-        not_ready::NotReady,
-        orders::{cashier_actions::CashierActions, customer_actions::CustomerActions},
+        orders::{
+            actions::cashier_actions::CashierActions, actions::customer_actions::CustomerActions,
+        },
+        util::loading::Loading,
+        util::not_authorized::NotAuthorized,
+        util::not_ready::NotReady,
     },
     models::{order::OrderStatus, user::Role, user_order::UserOrder},
 };

@@ -2,7 +2,7 @@ use leptos::{ev::SubmitEvent, html::Input, *};
 use leptos_router::use_navigate;
 use serde::{Deserialize, Serialize};
 
-use crate::components::login_otp::LoginOtpRequest;
+use crate::components::auth::login_otp::LoginOtpRequest;
 
 #[derive(Serialize, Deserialize)]
 pub enum SignupResponse {

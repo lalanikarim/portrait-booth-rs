@@ -3,14 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::{
-        app::AuthUser,
-        loading::Loading,
-        login::Login,
-        login_otp::LoginOtp,
-        logout::Logout,
-        orders::{orders_view::OrdersView, search_view::SearchView},
-        signup::Signup,
-        view_selector::ViewSelector,
+        app::AuthUser, auth::login::Login, auth::login_otp::LoginOtp, auth::logout::Logout,
+        auth::signup::Signup, orders::orders_view::OrdersView, search::search_view::SearchView,
+        util::loading::Loading, util::view_selector::ViewSelector,
     },
     models::user::{Role, User},
 };

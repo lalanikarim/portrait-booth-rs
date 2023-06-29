@@ -2,7 +2,7 @@ use leptos::{ev::MouseEvent, *};
 use leptos_router::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{components::loading::Loading, models::order::Order};
+use crate::{components::util::loading::Loading, models::order::Order};
 
 #[server(StoreStripeConfirmation, "/api")]
 pub async fn store_stripe_confirmation(

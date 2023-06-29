@@ -1,4 +1,4 @@
-use crate::components::orders::search_results::SearchResults;
+use crate::components::search::search_results::SearchResults;
 use crate::models::user_order::OrderSearchForm;
 use crate::models::user_order::UserOrder;
 use leptos::html::Input;

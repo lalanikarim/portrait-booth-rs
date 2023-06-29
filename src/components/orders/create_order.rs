@@ -1,6 +1,6 @@
 use leptos::{ev::SubmitEvent, *};
 
-use crate::{components::loading::Loading, models::user_order::UserOrder};
+use crate::{components::util::loading::Loading, models::user_order::UserOrder};
 
 use super::UnitPrice;
 
