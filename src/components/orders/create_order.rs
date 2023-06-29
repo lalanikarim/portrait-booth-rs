@@ -1,8 +1,9 @@
 use leptos::{ev::SubmitEvent, *};
 
-use crate::{components::util::loading::Loading, models::user_order::UserOrder};
-
-use super::UnitPrice;
+use crate::{
+    components::util::loading::Loading,
+    models::{pricing::Pricing, user_order::UserOrder},
+};
 
 #[server(CreateOrderRequest, "/api")]
 pub async fn create_order_request(
@@ -35,7 +36,7 @@ pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
         .expect("Set_order write signal should be present");
     let (error, set_error) = create_signal(cx, "".to_string());
     let (no_of_pics, set_no_of_pics) = create_signal(cx, None);
-    let unit_price_resource = use_context::<Resource<(), Result<UnitPrice, ServerFnError>>>(cx)
+    let unit_price_resource = use_context::<Resource<(), Result<Pricing, ServerFnError>>>(cx)
         .expect("Unit Price Resource should be present");
     let create_order_action = create_server_action::<CreateOrderRequest>(cx);
     create_effect(cx, move |_| {
@@ -87,10 +88,10 @@ pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
                                 view! { cx, <div class="error">"Server Error: " {e.to_string()}</div> }
                                     .into_view(cx)
                             }
-                            Ok(UnitPrice(zero_price, unit_price)) => {
+                            Ok(Pricing{base_price, unit_price}) => {
                                 let total_price = format!(
                                     "${}", no_of_pics.get().map(| no_of_pics | unit_price *
-                                    no_of_pics + zero_price).unwrap_or(0)
+                                    no_of_pics + base_price).unwrap_or(0)
                                 );
                                 view! { cx,
                                     <form on:submit=on_submit>
@@ -105,7 +106,7 @@ pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
                                                     >
                                                         {move || {
                                                             let qty = 1;
-                                                            format!("{} for ${}", qty, get_price(zero_price, unit_price, qty))
+                                                            format!("{} for ${}", qty, get_price(base_price, unit_price, qty))
                                                         }}
                                                     </button>
                                                     <button
@@ -115,7 +116,7 @@ pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
                                                     >
                                                         {move || {
                                                             let qty = 2;
-                                                            format!("{} for ${}", qty, get_price(zero_price, unit_price, qty))
+                                                            format!("{} for ${}", qty, get_price(base_price, unit_price, qty))
                                                         }}
                                                     </button>
                                                     <button
@@ -125,7 +126,7 @@ pub fn CreateOrder(cx: Scope, order_created: Action<(), ()>) -> impl IntoView {
                                                     >
                                                         {move || {
                                                             let qty = 3;
-                                                            format!("{} for ${}", qty, get_price(zero_price, unit_price, qty))
+                                                            format!("{} for ${}", qty, get_price(base_price, unit_price, qty))
                                                         }}
                                                     </button>
                                                 </div>

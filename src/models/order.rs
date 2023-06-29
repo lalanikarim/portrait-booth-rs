@@ -1,6 +1,8 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
+use super::pricing::Pricing;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::{FromRow, Type};
@@ -129,9 +131,11 @@ impl Order {
         no_of_photos: u64,
         pool: &MySqlPool,
     ) -> Result<Option<Order>, ServerFnError> {
-        let (zero_price, unit_price) =
-            Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
-        let order_total = no_of_photos * unit_price + zero_price;
+        let Pricing {
+            base_price,
+            unit_price,
+        } = Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
+        let order_total = no_of_photos * unit_price + base_price;
         let order_create = sqlx::query!("INSERT INTO `orders` (customer_id,no_of_photos,order_total,mode_of_payment,status,created_at) VALUES (?, ?, ?, ?, ?, ?)",
                     customer_id,
                     no_of_photos,
@@ -176,9 +180,11 @@ impl Order {
         no_of_photos: u64,
         pool: &MySqlPool,
     ) -> Result<u64, ServerFnError> {
-        let (zero_price, unit_price) =
-            Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
-        let order_total = no_of_photos * unit_price + zero_price;
+        let Pricing {
+            base_price,
+            unit_price,
+        } = Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
+        let order_total = no_of_photos * unit_price + base_price;
         sqlx::query!(
             "UPDATE `orders` SET no_of_photos = ?,order_total = ? WHERE id = ?",
             id,
@@ -387,17 +393,20 @@ impl Order {
             .map_err(|e| to_server_fn_error(e))
     }
 
-    pub fn get_unit_price() -> Result<(u64, u64), ServerFnError> {
+    pub fn get_unit_price() -> Result<Pricing, ServerFnError> {
         let unit_price = dotenvy::var("PHOTO_UNIT_PRICE")
             .unwrap_or("5".into())
             .parse()
             .map_err(|e| crate::to_server_fn_error(e));
-        let zero_price = dotenvy::var("PHOTO_ZERO_PRICE")
+        let base_price = dotenvy::var("PHOTO_ZERO_PRICE")
             .unwrap_or("5".into())
             .parse()
             .map_err(|e| crate::to_server_fn_error(e));
-        match (zero_price, unit_price) {
-            (Ok(zero_price), Ok(unit_price)) => Ok((zero_price, unit_price)),
+        match (base_price, unit_price) {
+            (Ok(base_price), Ok(unit_price)) => Ok(Pricing {
+                base_price,
+                unit_price,
+            }),
             _ => Err(ServerFnError::ServerError(
                 "Unable to find or parse price".to_string(),
             )),
