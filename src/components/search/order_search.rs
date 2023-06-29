@@ -1,26 +1,16 @@
-use crate::components::search::search_results::SearchResults;
-use crate::models::user_order::OrderSearchForm;
-use crate::models::user_order::UserOrder;
-use leptos::html::Input;
-use leptos::*;
-use web_sys::SubmitEvent;
-
-#[server(OrderSearchRequest, "/api")]
-pub async fn order_search_request(
-    cx: Scope,
-    form: OrderSearchForm,
-) -> Result<Vec<UserOrder>, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should exist");
-    UserOrder::search_orders(form, &pool).await
-}
+use crate::components::search::search_view::OrderSearchRequest;
+use crate::models::user_order::{OrderSearchForm, UserOrder};
+use leptos::{ev::*, html::*, *};
 
 #[component]
-pub fn OrderSearch(cx: Scope) -> impl IntoView {
+pub fn OrderSearch(
+    cx: Scope,
+    order_search_action: Action<OrderSearchRequest, Result<Vec<UserOrder>, ServerFnError>>,
+) -> impl IntoView {
     let order_no_input = create_node_ref::<Input>(cx);
     let name_input = create_node_ref::<Input>(cx);
     let email_input = create_node_ref::<Input>(cx);
     let phone_input = create_node_ref::<Input>(cx);
-    let order_search_action = create_server_action::<OrderSearchRequest>(cx);
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
         let order_no = order_no_input
@@ -84,6 +74,5 @@ pub fn OrderSearch(cx: Scope) -> impl IntoView {
                 </div>
             </form>
         </div>
-        <SearchResults orders=order_search_action.value() />
     }
 }

@@ -6,7 +6,6 @@ use crate::components::orders::confirmation::Confirmation;
 use crate::{
     components::{
         auth::login::Login, auth::login_otp::LoginOtp, auth::signup::Signup, home_page::HomePage,
-        search::order_search::OrderSearch,
     },
     models::user::User,
 };
@@ -74,9 +73,6 @@ pub fn App(cx: Scope) -> impl IntoView {
                             view! { cx, <Confirmation/> }
                         }
                     />
-                    <Route path="/search" view=|cx|{
-                                view!{cx, <OrderSearch />}
-                            } />
                 </Routes>
             </main>
         </Router>
