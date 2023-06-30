@@ -16,7 +16,7 @@ pub fn Logout(cx: Scope, #[prop(optional)] completed: Option<Action<(), ()>>) ->
         use_context::<WriteSignal<AuthUser>>(cx).expect("Set Auth User should be present");
     let on_click = move |_| {
         spawn_local(async move {
-            if let Ok(_) = logout_request(cx).await {
+            if logout_request(cx).await.is_ok() {
                 set_auth_user.set(None);
                 let navigate = use_navigate(cx);
                 _ = navigate("/", Default::default());
