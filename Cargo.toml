@@ -45,12 +45,11 @@ async-stripe = { version = "0.22.2", default-features = false, optional = true, 
 base64 = { version = "0.21.2", optional = true }
 dotenvy = { version = "0.15.0", optional = true }
 rust-s3 = { version = "0.33.0", features=["default"], optional = true }
-web-sys = { version = "0.3.64", features = ["ReadableStream", "File", "Blob", "DataTransferItem", "DataTransferItemList", "DataTransfer", "DragEvent", "FormData"] }
+web-sys = { version = "0.3.64", features = ["ReadableStream", "File", "Blob", "DataTransferItem", "DataTransferItemList", "DataTransfer", "DragEvent" ] }
 js-sys = "0.3.64"
 wasm-bindgen-futures = "0.4.37"
 lettre = { version = "0.10.4", default-features = false, features = ["tokio1-rustls-tls","smtp-transport","builder","tokio1"], optional = true }
 openssl = { version = "0.10", features = ["vendored"], optional = true }
-gloo-file = { version = "0.2.3", features = ["futures"]  }
 
 [features]
 default = ["ssr"]

@@ -350,8 +350,12 @@ impl Order {
         .map_err(|e| to_server_fn_error(e))
     }
 
-    pub async fn get_order_items(&self, pool: &MySqlPool) -> Result<Vec<OrderItem>, ServerFnError> {
-        sqlx::query_as!(OrderItem,"SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `order_id` = ?",self.id)
+    pub async fn get_order_items(
+        &self,
+        mode: Mode,
+        pool: &MySqlPool,
+    ) -> Result<Vec<OrderItem>, ServerFnError> {
+        sqlx::query_as!(OrderItem,"SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `order_id` = ? and `mode` = ?",self.id,mode)
             .fetch_all(pool)
             .await
             .map_err(|e| to_server_fn_error(e))
