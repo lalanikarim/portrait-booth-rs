@@ -14,7 +14,7 @@ fn get_mailer() -> Result<AsyncSmtpTransport<Tokio1Executor>, ServerFnError> {
     let creds = Credentials::new(username, password);
 
     AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(relay.as_str())
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
         .map(|r| r.credentials(creds).build())
 }
 

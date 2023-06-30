@@ -41,7 +41,7 @@ pub enum PaymentMode {
     Override = 3,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq, PartialOrd, Copy)]
 #[repr(i8)]
 pub enum OrderStatus {
     Created = 0,
