@@ -10,7 +10,7 @@ pub async fn create_order_request(
     cx: Scope,
     no_of_photos: u64,
 ) -> Result<Option<UserOrder>, ServerFnError> {
-    if no_of_photos < 1 || no_of_photos > 3 {
+    if !(1..=3).contains(&no_of_photos) {
         return Err(ServerFnError::Args(
             "Only 1, 2, or 3 photos can be ordered".into(),
         ));
@@ -28,7 +28,7 @@ pub async fn create_order_request(
             Ok(None) => Ok(None),
             Ok(Some(order)) => UserOrder::get_by_order_id(order.id, &pool)
                 .await
-                .map(|o| Some(o)),
+                .map(Some),
         },
     }
 }

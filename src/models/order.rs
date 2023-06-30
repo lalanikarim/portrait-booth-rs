@@ -82,15 +82,15 @@ impl Order {
         customer_id: u64,
         pool: &MySqlPool,
     ) -> Result<Vec<UserOrder>, ServerFnError> {
-        let result = sqlx::query_as!(
+        
+        sqlx::query_as!(
             UserOrder,
             "SELECT o.id, o.customer_id, o.no_of_photos, o.order_total, o.mode_of_payment as `mode_of_payment:_`, o.status as `status:_`, u.name, u.email, u.phone FROM `orders` o inner join `users` u where o.customer_id = u.id and u.id = ?",
             customer_id
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| to_server_fn_error(e));
-        result
+        .map_err(to_server_fn_error)
     }
     pub async fn get_customer(&self, pool: &MySqlPool) -> Result<User, ServerFnError> {
         User::get_by_id(self.customer_id, pool).await
@@ -103,8 +103,8 @@ impl Order {
             .bind(cashier_id)
             .fetch_one(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
-            .map(|u| Some(u))
+            .map_err(to_server_fn_error)
+            .map(Some)
     }
     pub async fn get_operator(&self, pool: &MySqlPool) -> Result<Option<User>, ServerFnError> {
         let Some(operator_id) = self.operator_id else {
@@ -114,8 +114,8 @@ impl Order {
             .bind(operator_id)
             .fetch_one(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
-            .map(|u| Some(u))
+            .map_err(to_server_fn_error)
+            .map(Some)
     }
     pub async fn get_processor(&self, pool: &MySqlPool) -> Result<Option<User>, ServerFnError> {
         let Some(processor_id) = self.processor_id else {
@@ -125,8 +125,8 @@ impl Order {
             .bind(processor_id)
             .fetch_one(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
-            .map(|u| Some(u))
+            .map_err(to_server_fn_error)
+            .map(Some)
     }
 
     pub async fn create(
@@ -153,7 +153,7 @@ impl Order {
             Err(e) => Err(to_server_fn_error(e)),
             Ok(order_id) => Order::get_by_id(order_id, pool)
                 .await
-                .map_err(|e| to_server_fn_error(e)),
+                .map_err(to_server_fn_error),
         }
     }
 
@@ -161,7 +161,7 @@ impl Order {
         sqlx::query_as!(Order, "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where id = ?", id)
             .fetch_optional(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
+            .map_err(to_server_fn_error)
     }
 
     pub async fn update_status(
@@ -179,7 +179,7 @@ impl Order {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
     pub async fn delete(
         id: u64,
@@ -194,7 +194,7 @@ impl Order {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
     pub async fn update(
         id: u64,
@@ -215,7 +215,7 @@ impl Order {
         .execute(pool)
         .await
         .map(|result| result.last_insert_id())
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
     pub async fn start_payment_cash(
         id: u64,
@@ -230,7 +230,7 @@ impl Order {
                     OrderStatus::Created as i32)
                     .execute(pool)
                     .await.map(|result| result.rows_affected() > 0)
-                    .map_err(|e| to_server_fn_error(e))
+                    .map_err(to_server_fn_error)
     }
     pub async fn collect_payment_cash(
         id: u64,
@@ -245,7 +245,7 @@ impl Order {
                     PaymentMode::Cash as i32)
                     .execute(pool)
                     .await.map(|result| result.rows_affected() > 0)
-                    .map_err(|e| to_server_fn_error(e))
+                    .map_err(to_server_fn_error)
     }
 
     pub async fn start_payment_stripe(
@@ -265,7 +265,7 @@ impl Order {
                     customer_id)
                     .execute(pool)
                     .await.map(|result| result.rows_affected() > 0)
-                    .map_err(|e| to_server_fn_error(e))
+                    .map_err(to_server_fn_error)
     }
 
     pub async fn mark_stripe_payment_complete(
@@ -281,7 +281,7 @@ impl Order {
                     OrderStatus::PaymentPending)
                     .execute(pool)
                     .await.map(|result| result.rows_affected() > 0)
-                    .map_err(|e| to_server_fn_error(e))
+                    .map_err(to_server_fn_error)
     }
     pub async fn mark_stripe_payment_error(
         &self,
@@ -296,7 +296,7 @@ impl Order {
                     OrderStatus::PaymentPending)
                     .execute(pool)
                     .await.map(|result| result.rows_affected() > 0)
-                    .map_err(|e| to_server_fn_error(e))
+                    .map_err(to_server_fn_error)
     }
     pub async fn mark_order_uploaded(
         &self,
@@ -313,7 +313,7 @@ impl Order {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
     pub async fn mark_order_in_progress(
         &self,
@@ -330,7 +330,7 @@ impl Order {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
     pub async fn mark_order_processed(
         &self,
@@ -347,7 +347,7 @@ impl Order {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
 
     pub async fn get_order_items(
@@ -358,7 +358,7 @@ impl Order {
         sqlx::query_as!(OrderItem,"SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `order_id` = ? and `mode` = ?",self.id,mode)
             .fetch_all(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
+            .map_err(to_server_fn_error)
     }
     pub async fn remaining_order_items(
         &self,
@@ -372,7 +372,7 @@ impl Order {
         )
         .fetch_one(pool)
         .await
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
         .map(|result| self.no_of_photos - result.count as u64)
     }
 
@@ -401,7 +401,7 @@ impl Order {
                     .execute(pool)
                     .await {
                             Err(e) => Err(to_server_fn_error(e)),
-                            Ok(result) => OrderItem::get_by_id(result.last_insert_id(),&pool).await
+                            Ok(result) => OrderItem::get_by_id(result.last_insert_id(),pool).await
                         }
                 }
             }
@@ -424,7 +424,7 @@ impl Order {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
 
     pub async fn get_by_order_confirmation(
@@ -434,18 +434,18 @@ impl Order {
         sqlx::query_as!(Order, "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where order_ref = ?", order_ref)
             .fetch_optional(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
+            .map_err(to_server_fn_error)
     }
 
     pub fn get_unit_price() -> Result<Pricing, ServerFnError> {
         let unit_price = dotenvy::var("PHOTO_UNIT_PRICE")
             .unwrap_or("5".into())
             .parse()
-            .map_err(|e| crate::to_server_fn_error(e));
+            .map_err(crate::to_server_fn_error);
         let base_price = dotenvy::var("PHOTO_ZERO_PRICE")
             .unwrap_or("5".into())
             .parse()
-            .map_err(|e| crate::to_server_fn_error(e));
+            .map_err(crate::to_server_fn_error);
         match (base_price, unit_price) {
             (Ok(base_price), Ok(unit_price)) => Ok(Pricing {
                 base_price,

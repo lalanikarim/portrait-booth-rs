@@ -29,7 +29,7 @@ pub async fn get_files(prefix: String) -> Result<Vec<String>, ServerFnError> {
             .map_err(|e| ServerFnError::ServerError(e.to_string()))
             .map(|r| {
                 r.iter()
-                    .map(|i| {
+                    .flat_map(|i| {
                         let mut common_prefixes: Vec<String> = i
                             .common_prefixes
                             .clone()
@@ -40,7 +40,6 @@ pub async fn get_files(prefix: String) -> Result<Vec<String>, ServerFnError> {
                         common_prefixes.append(&mut content);
                         common_prefixes
                     })
-                    .flatten()
                     .collect()
             }),
     }
@@ -51,7 +50,7 @@ pub async fn create_presigned_url(path: String) -> Result<String, ServerFnError>
         Err(e) => Err(e),
         Ok(bucket) => bucket
             .presign_get(path, 300, None)
-            .map_err(|e| to_server_fn_error(e)),
+            .map_err(to_server_fn_error),
     }
 }
 pub async fn create_presigned_put_url(path: String) -> Result<String, ServerFnError> {
@@ -59,7 +58,7 @@ pub async fn create_presigned_put_url(path: String) -> Result<String, ServerFnEr
         Err(e) => Err(e),
         Ok(bucket) => bucket
             .presign_put(path, 300, None)
-            .map_err(|e| to_server_fn_error(e)),
+            .map_err(to_server_fn_error),
     }
 }
 

@@ -18,7 +18,7 @@ pub async fn get_payment_link(cx: Scope, order: Order) -> Result<String, ServerF
     let order_ref = order.order_ref.expect("Order Ref should be present");
     let client = Client::new(secret_key);
     let mut create_payment_link_args = CreatePaymentLink::new(vec![CreatePaymentLinkLineItems {
-        price: pricing_id.into(),
+        price: pricing_id,
         quantity: 1,
         ..Default::default()
     }]);
@@ -35,5 +35,5 @@ pub async fn get_payment_link(cx: Scope, order: Order) -> Result<String, ServerF
     PaymentLink::create(&client, create_payment_link_args)
         .await
         .map(|link| link.url)
-        .map_err(|e: StripeError| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
 }

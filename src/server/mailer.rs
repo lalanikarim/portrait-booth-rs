@@ -45,5 +45,5 @@ pub async fn send_otp(to: String, otp: String) -> Result<bool, ServerFnError> {
         .send(email)
         .await
         .map(|_| true)
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
 }

@@ -1,16 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-impl Default for Role {
-    fn default() -> Self {
-        Role::Customer
-    }
-}
 
-impl Default for UserStatus {
-    fn default() -> Self {
-        UserStatus::NotActivatedYet
-    }
-}
+
+
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
@@ -37,8 +29,10 @@ pub struct User {
 }
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, Type)]
 #[repr(i16)]
+#[derive(Default)]
 pub enum Role {
     Anonymous = 0,
+    #[default]
     Customer = 1,
     Cashier = 2,
     Operator = 3,
@@ -48,8 +42,10 @@ pub enum Role {
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, Type)]
 #[repr(i16)]
+#[derive(Default)]
 pub enum UserStatus {
     Active = 1,
+    #[default]
     NotActivatedYet = 0,
     Disabled = 2,
 }
@@ -79,14 +75,14 @@ impl User {
         sqlx::query_as!(User,"SELECT id,name,email,phone,password_hash,otp_secret,role as `role:_`,status as `status: _` from `users` WHERE email = ?", username)
             .fetch_one(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
+            .map_err(to_server_fn_error)
     }
 
     pub async fn get_by_id(id: u64, pool: &MySqlPool) -> Result<Self, ServerFnError> {
         sqlx::query_as!(User,"SELECT id,name,email,phone,password_hash,otp_secret,role as `role:_`,status as `status: _` from `users` WHERE id = ?", id)
             .fetch_one(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
+            .map_err(to_server_fn_error)
     }
 
     pub async fn create(
@@ -108,7 +104,7 @@ impl User {
         .execute(pool)
         .await
         .map(|result| result.last_insert_id())
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
 
     pub async fn orders(&self, pool: &MySqlPool) -> Result<Vec<UserOrder>, ServerFnError> {

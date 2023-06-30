@@ -60,7 +60,7 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                                         order_items
                                             .iter()
                                             .map(|order_item| {
-                                                let get_url = order_item.clone().get_url.clone();
+                                                let get_url = order_item.clone().get_url;
                                                 view! { cx,
                                                     <div class="w-48 p-2">
                                                         <a href=&get_url>

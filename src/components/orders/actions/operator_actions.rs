@@ -40,9 +40,9 @@ pub fn OperatorActions(cx: Scope, order: UserOrder) -> impl IntoView {
             return view! {cx,<EmptyView/>}.into_view(cx);
         }
     }
-    let status = order.status.clone();
+    let status = order.status;
     let start_uploading_order = order.clone();
-    let uploading_done_order = order.clone();
+    let uploading_done_order = order;
     let start_uploading = move |_: MouseEvent| {
         let order = start_uploading_order.clone();
         let from = OrderStatus::Paid;

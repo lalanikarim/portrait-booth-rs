@@ -73,7 +73,7 @@ pub enum FileUploadState {
 }
 
 pub fn get_mime_type(file_name: String) -> Result<String, ServerFnError> {
-    let splits: Vec<&str> = file_name.split(".").collect();
+    let splits: Vec<&str> = file_name.split('.').collect();
     let Some(ext) = splits.last() else {
         return Err(ServerFnError::Args("Invalid file name received.".to_string()));
     };
@@ -119,7 +119,7 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
     };
 
     let on_drop = move |ev: DragEvent| {
-        let mode = mode.clone();
+        let mode = mode;
         let order = order.clone();
         ev.prevent_default();
         let dt = ev.data_transfer().unwrap();
@@ -129,7 +129,7 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         for i in 0..c {
             let item = items.get(i);
             if let Some(item) = item {
-                if item.kind() == "file".to_string() {
+                if item.kind() == *"file" {
                     if let Ok(Some(file)) = item.get_as_file() {
                         set_files_to_upload.update(|f| {
                             f.push((file.name(), FileUploadState::Added));

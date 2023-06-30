@@ -44,13 +44,13 @@ impl OrderItem {
         .execute(pool)
         .await
         .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+        .map_err(to_server_fn_error)
     }
 
     pub async fn get_by_id(id: u64, pool: &MySqlPool) -> Result<OrderItem, ServerFnError> {
         sqlx::query_as!(OrderItem, "SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `id` = ?", id)
             .fetch_one(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
+            .map_err(to_server_fn_error)
     }
 }

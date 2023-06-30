@@ -20,14 +20,14 @@ pub fn OrderSearch(
         let name = name_input.get().expect("Name should be present").value();
         let email = email_input.get().expect("Email should be present").value();
         let phone = phone_input.get().expect("Phone should be present").value();
-        let order_no = if order_no.len() > 0 {
+        let order_no = if !order_no.is_empty() {
             order_no.parse().ok()
         } else {
             None
         };
-        let name = if name.len() > 0 { Some(name) } else { None };
-        let email = if email.len() > 0 { Some(email) } else { None };
-        let phone = if phone.len() > 0 { Some(phone) } else { None };
+        let name = if !name.is_empty() { Some(name) } else { None };
+        let email = if !email.is_empty() { Some(email) } else { None };
+        let phone = if !phone.is_empty() { Some(phone) } else { None };
         if order_no.is_some() || name.is_some() || email.is_some() || phone.is_some() {
             let form = OrderSearchForm {
                 order_no,

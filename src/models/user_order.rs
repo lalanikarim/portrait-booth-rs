@@ -45,7 +45,7 @@ impl UserOrder {
             order_id
         )
         .fetch_one(pool)
-        .await.map_err(|e|to_server_fn_error(e))
+        .await.map_err(to_server_fn_error)
     }
     pub async fn search_orders(
         OrderSearchForm {
@@ -110,6 +110,6 @@ impl UserOrder {
         search_query
             .fetch_all(pool)
             .await
-            .map_err(|e| to_server_fn_error(e))
+            .map_err(to_server_fn_error)
     }
 }

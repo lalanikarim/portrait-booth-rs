@@ -38,7 +38,7 @@ fn validate_password(password: String, confirm_password: String) -> Result<(), V
     if password.find(|c: char| "!@#$%^&*".contains(c)).is_none() {
         error.push("Must contain at least one symbol: !@#$%^&*".into());
     }
-    if error.len() == 0 {
+    if error.is_empty() {
         Ok(())
     } else {
         Err(error)
@@ -128,7 +128,7 @@ pub fn signup(
                                 let SignupForm { email, .. } = form;
                                 let url = format!(
                                     "/otp?email={}&show_email=false",
-                                    email.replace("+", "%2b")
+                                    email.replace('+', "%2b")
                                 );
                                 log!("url: {url}");
                                 let login_otp_request_action =
@@ -180,7 +180,7 @@ pub fn signup(
                 .expect("confirm password input should exist")
                 .value();
             if let Err(password_error) =
-                validate_password(password.clone(), confirm_password.clone())
+                validate_password(password.clone(), confirm_password)
             {
                 set_errors.update(move |err| err.extend_from_slice(&password_error));
                 (false, None)
@@ -191,7 +191,7 @@ pub fn signup(
             (true, None)
         };
         if let (true, password) = ok_to_signup {
-            let phone = if phone.len() > 0 { Some(phone) } else { None };
+            let phone = if !phone.is_empty() { Some(phone) } else { None };
             let form = SignupForm {
                 fullname,
                 email,

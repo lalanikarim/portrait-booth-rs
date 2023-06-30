@@ -81,8 +81,8 @@ pub fn LoginOtp(
     let (state, set_state) = create_signal(
         cx,
         email
-            .clone()
-            .map(|email| LoginOtpState::GetOtp(email))
+            
+            .map(LoginOtpState::GetOtp)
             .unwrap_or(LoginOtpState::GetEmail),
     );
     let (email_error, set_email_error) = create_signal(cx, "");
@@ -120,7 +120,7 @@ pub fn LoginOtp(
             .get()
             .expect("Username field should be present")
             .value();
-        if email.len() > 0 {
+        if !email.is_empty() {
             set_email_error.update(|e| *e = "");
             match state.get() {
                 LoginOtpState::GetEmail => {
