@@ -47,7 +47,7 @@ pub async fn home_page_request(cx: Scope) -> Result<HomePageResponse, ServerFnEr
     })
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
 pub enum HomePageViews {
     MyOrders,
     SearchOrders,
@@ -90,12 +90,12 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                             }
                             Ok(HomePageResponse::LoggedIn(user)) => {
                                 set_auth_user.set(Some(user.clone()));
-                                let user_name = if user.role == Role::Customer
-                                    || user.role == Role::Anonymous
+                                let user_name = if user.role.clone() == Role::Customer
+                                    || user.role.clone() == Role::Anonymous
                                 {
-                                    user.name
+                                    user.name.clone()
                                 } else {
-                                    format!("{:?} ({:?})", user.name, user.role)
+                                    format!("{:?} ({:?})", user.name.clone(), user.role.clone())
                                 };
                                 let home_page_view = match show_view.get() {
                                     HomePageViews::MyOrders => {
@@ -106,10 +106,11 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                     }
                                     HomePageViews::ProcessOrders => todo!(),
                                 };
+
                                 view! { cx,
                                     <div>"Logged in: " {user_name}</div>
                                     <div class="px-6 pt-2 mx-auto max-w-md flex flex-row justify-evenly">
-                                        <ViewSelector/>
+                                        <ViewSelector user />
                                         <Logout completed=completed/>
                                     </div>
                                     {home_page_view}
