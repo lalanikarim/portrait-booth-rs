@@ -57,43 +57,46 @@ fn validate_phone(phone: String) -> Result<Option<String>, Vec<String>> {
 
 #[server(SignupRequest, "/api")]
 pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupResponse, ServerFnError> {
-    use crate::pool;
-
     use crate::models::user::Role;
     use totp_rs::*;
 
-    let pool = pool(cx)?;
-    match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where email = ?", form.email)
-        .fetch_one(&pool)
-        .await
-    {
-        Ok(1) => {
-            return Ok(SignupResponse::EmailAlreadyUsed);
-        }
-        Err(e) => {
-            return Err(ServerFnError::ServerError(e.to_string()));
-        }
-        _ => (),
-    };
+    match crate::pool(cx) {
+        Err(e) => Err(e),
+        Ok(pool) => {
+            match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where email = ?", form.email)
+                .fetch_one(&pool)
+                .await
+            {
+                Ok(1) => {
+                    return Ok(SignupResponse::EmailAlreadyUsed);
+                }
+                Err(e) => {
+                    return Err(ServerFnError::ServerError(e.to_string()));
+                }
+                _ => (),
+            };
 
-    let Secret::Encoded(otp_secret) = Secret::generate_secret().to_encoded() else {
-        return Err(ServerFnError::ServerError("Unable to generate OTP Secret".into()));
-    };
-    let password_hash = bcrypt::hash(form.password.unwrap_or(otp_secret.clone()), 12).unwrap();
+            let Secret::Encoded(otp_secret) = Secret::generate_secret().to_encoded() else {
+                return Err(ServerFnError::ServerError("Unable to generate OTP Secret".into()));
+            };
+            let password_hash =
+                bcrypt::hash(form.password.unwrap_or(otp_secret.clone()), 12).unwrap();
 
-    sqlx::query!(
-        "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)",
-        form.fullname,
-        form.email,
-        form.phone,
-        password_hash,
-        otp_secret,
-        Role::Anonymous
-    )
-    .execute(&pool)
-    .await
-    .map(|_| SignupResponse::Success)
-    .map_err(|e| ServerFnError::ServerError(e.to_string()))
+            sqlx::query!(
+                "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)",
+                form.fullname,
+                form.email,
+                form.phone,
+                password_hash,
+                otp_secret,
+                Role::Anonymous
+            )
+            .execute(&pool)
+            .await
+            .map(|_| SignupResponse::Success)
+            .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        }
+    }
 }
 #[component]
 pub fn signup(
