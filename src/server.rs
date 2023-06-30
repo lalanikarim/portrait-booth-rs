@@ -5,10 +5,14 @@ pub mod mailer;
 pub mod storage;
 pub mod stripe;
 
-use crate::server::{
-    app_state::AppState,
-    fileserv::file_and_error_handler,
-    handlers::{leptos_routes_handler, server_fn_handler},
+use crate::{
+    auth::AuthSession,
+    models::user::User,
+    server::{
+        app_state::AppState,
+        fileserv::file_and_error_handler,
+        handlers::{leptos_routes_handler, server_fn_handler},
+    },
 };
 use axum::{routing::get, Router};
 use axum_session::{SessionConfig, SessionLayer, SessionMySqlPool, SessionStore};
@@ -110,6 +114,29 @@ pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
         .ok_or("db pool missing")
         .map_err(|e| leptos::ServerFnError::ServerError(e.to_string()))
 }
+
+pub fn pool_and_auth(cx: Scope) -> Result<(MySqlPool, AuthSession), ServerFnError> {
+    match crate::pool(cx) {
+        Err(e) => Err(e),
+        Ok(pool) => match crate::auth::auth(cx) {
+            Err(e) => Err(e),
+            Ok(auth) => Ok((pool, auth)),
+        },
+    }
+}
+
+pub fn pool_and_current_user(cx: Scope) -> Result<(MySqlPool, User), ServerFnError> {
+    match pool_and_auth(cx) {
+        Err(e) => Err(e),
+        Ok((pool, auth)) => match auth.current_user {
+            None => Err(ServerFnError::ServerError(
+                "No authenticated user".to_string(),
+            )),
+            Some(user) => Ok((pool, user)),
+        },
+    }
+}
+
 pub fn get_totp_duration() -> u64 {
     let dur = dotenvy::var("TOTP_DURATION").unwrap_or("3600".into());
     let dur = dur.parse().expect("TOTP_DURATION should be set");

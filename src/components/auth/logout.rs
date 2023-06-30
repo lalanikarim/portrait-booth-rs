@@ -5,9 +5,9 @@ use crate::components::app::AuthUser;
 
 #[server(LogoutRequest, "/api")]
 pub async fn logout_request(cx: Scope) -> Result<(), ServerFnError> {
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
-    auth.logout_user();
-    Ok(())
+    crate::auth::auth(cx).map(|auth| {
+        auth.logout_user();
+    })
 }
 
 #[component]

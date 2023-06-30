@@ -12,22 +12,23 @@ use crate::{
 
 #[server(MarkPaidRequest, "/api")]
 pub async fn mark_paid_request(cx: Scope, order_id: u64) -> Result<UserOrder, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should be present");
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
-    let Some(user) = auth.current_user else {
-        return Err(ServerFnError::ServerError("Unable to fetch logged in user".to_string()));
-    };
-    if user.role != Role::Cashier && user.role != Role::Manager {
-        return Err(ServerFnError::ServerError(
-            "Only Manager or Cashier can collect payment".to_string(),
-        ));
-    }
-    match crate::models::order::Order::collect_payment_cash(order_id, user.id, &pool).await {
+    match crate::server::pool_and_current_user(cx) {
         Err(e) => Err(e),
-        Ok(false) => Err(ServerFnError::ServerError(
-            "Unable to save changes to order".to_string(),
-        )),
-        Ok(true) => UserOrder::get_by_order_id(order_id, &pool).await,
+        Ok((pool, user)) => {
+            if user.role != Role::Cashier && user.role != Role::Manager {
+                return Err(ServerFnError::ServerError(
+                    "Only Manager or Cashier can collect payment".to_string(),
+                ));
+            }
+            match crate::models::order::Order::collect_payment_cash(order_id, user.id, &pool).await
+            {
+                Err(e) => Err(e),
+                Ok(false) => Err(ServerFnError::ServerError(
+                    "Unable to save changes to order".to_string(),
+                )),
+                Ok(true) => UserOrder::get_by_order_id(order_id, &pool).await,
+            }
+        }
     }
 }
 

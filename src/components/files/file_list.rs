@@ -16,8 +16,10 @@ pub async fn get_order_items(
     order: Order,
     mode: UploaderMode,
 ) -> Result<Vec<OrderItem>, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should be present");
-    order.get_order_items(mode, &pool).await
+    match crate::pool(cx) {
+        Err(e) => Err(e),
+        Ok(pool) => order.get_order_items(mode, &pool).await,
+    }
 }
 
 #[server(GetUrlRequest, "/api")]

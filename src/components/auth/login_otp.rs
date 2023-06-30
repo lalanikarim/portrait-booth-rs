@@ -5,27 +5,31 @@ use leptos_router::*;
 #[server(LoginOtpRequest, "/api")]
 pub async fn login_otp_request(cx: Scope, email: String) -> Result<(), ServerFnError> {
     use totp_rs::*;
-    let pool = crate::pool(cx).expect("Pool should be present");
-    let result = sqlx::query_scalar!("SELECT otp_secret FROM users WHERE email = ?", email)
-        .fetch_one(&pool)
-        .await;
-    log!("Received Email: {email:?}");
-    if let Ok(Some(otp_secret)) = result {
-        let totp_dur = crate::get_totp_duration();
-        let totp = TOTP::new(
-            Algorithm::SHA256,
-            6,
-            1,
-            totp_dur,
-            otp_secret.as_bytes().into(),
-        )
-        .expect("Unable to Initialize TOTP");
-        let otp = totp.generate_current().expect("Unable to generate OTP");
-        log!("OTP Code: {:#?}, ttl: {:#?}s", otp, totp.ttl());
-        let email_response = server::mailer::send_otp(email, otp.clone()).await;
-        log!("Email: {:#?}", email_response);
+    match crate::pool(cx) {
+        Err(e) => Err(e),
+        Ok(pool) => {
+            let result = sqlx::query_scalar!("SELECT otp_secret FROM users WHERE email = ?", email)
+                .fetch_one(&pool)
+                .await;
+            log!("Received Email: {email:?}");
+            if let Ok(Some(otp_secret)) = result {
+                let totp_dur = crate::get_totp_duration();
+                let totp = TOTP::new(
+                    Algorithm::SHA256,
+                    6,
+                    1,
+                    totp_dur,
+                    otp_secret.as_bytes().into(),
+                )
+                .expect("Unable to Initialize TOTP");
+                let otp = totp.generate_current().expect("Unable to generate OTP");
+                log!("OTP Code: {:#?}, ttl: {:#?}s", otp, totp.ttl());
+                let email_response = server::mailer::send_otp(email, otp.clone()).await;
+                log!("Email: {:#?}", email_response);
+            }
+            Ok(())
+        }
     }
-    Ok(())
 }
 #[server(LoginOtpVerifyRequest, "/api")]
 pub async fn login_otp_verify_request(
@@ -34,27 +38,31 @@ pub async fn login_otp_verify_request(
     otp: String,
 ) -> Result<bool, ServerFnError> {
     use totp_rs::*;
-    let pool = crate::pool(cx).expect("Pool should be present");
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
     log!("Received Email: {email:?}");
-    let result =
-        sqlx::query_as::<_, crate::models::user::User>("SELECT * FROM users WHERE email = ?")
+    match crate::server::pool_and_auth(cx) {
+        Err(e) => Err(e),
+        Ok((pool, auth)) => {
+            let result = sqlx::query_as::<_, crate::models::user::User>(
+                "SELECT * FROM users WHERE email = ?",
+            )
             .bind(email)
             .fetch_one(&pool)
             .await;
-    if let Ok(user) = result {
-        let secret = user.clone().otp_secret.unwrap_or_default();
-        let secret = secret.as_bytes();
-        let totp_dur = crate::get_totp_duration();
-        let totp = TOTP::new(Algorithm::SHA256, 6, 1, totp_dur, secret.into())
-            .expect("Unable to Initialize TOTP");
-        if totp.check_current(otp.as_str()).ok().unwrap_or_default() {
-            auth.logout_user();
-            auth.login_user(user.id);
-            return Ok(true);
+            if let Ok(user) = result {
+                let secret = user.clone().otp_secret.unwrap_or_default();
+                let secret = secret.as_bytes();
+                let totp_dur = crate::get_totp_duration();
+                let totp = TOTP::new(Algorithm::SHA256, 6, 1, totp_dur, secret.into())
+                    .expect("Unable to Initialize TOTP");
+                if totp.check_current(otp.as_str()).ok().unwrap_or_default() {
+                    auth.logout_user();
+                    auth.login_user(user.id);
+                    return Ok(true);
+                }
+            }
+            Ok(false)
         }
     }
-    Ok(false)
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -139,7 +147,6 @@ pub fn LoginOtp(
             password.set_autofocus(true);
             set_timeout(
                 move || {
-                    log!("Setting focus");
                     _ = password.focus();
                 },
                 std::time::Duration::from_secs(2),

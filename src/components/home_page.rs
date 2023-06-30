@@ -38,13 +38,13 @@ pub async fn get_unit_price() -> Result<Pricing, ServerFnError> {
 }
 #[server(HomePageRequest, "/api")]
 pub async fn home_page_request(cx: Scope) -> Result<HomePageResponse, ServerFnError> {
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
-    let response = if let Some(user) = auth.current_user {
-        Ok(HomePageResponse::LoggedIn(user))
-    } else {
-        Ok(HomePageResponse::NotLoggedIn)
-    };
-    response
+    crate::auth::auth(cx).map(|auth| {
+        if let Some(user) = auth.current_user {
+            HomePageResponse::LoggedIn(user)
+        } else {
+            HomePageResponse::NotLoggedIn
+        }
+    })
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]

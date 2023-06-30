@@ -1,16 +1,19 @@
 use leptos::{ev::MouseEvent, *};
 
 use crate::{
-    components::orders::create_order::CreateOrder,
+    components::{
+        orders::create_order::CreateOrder,
+        util::{empty_view::EmptyView, loading::Loading},
+    },
     models::{order::OrderStatus, user_order::UserOrder},
 };
 
 #[server(GetOrdersRequest, "/api")]
 pub async fn get_orders_request(cx: Scope) -> Result<Vec<UserOrder>, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should exist");
-    let auth = crate::auth::auth(cx).expect("Auth should exist");
-    let current_user = auth.current_user.expect("Authenticated User should exist");
-    current_user.orders(&pool).await
+    match crate::server::pool_and_current_user(cx) {
+        Err(e) => Err(e),
+        Ok((pool, current_user)) => current_user.orders(&pool).await,
+    }
 }
 
 #[component]
@@ -23,7 +26,11 @@ pub fn OrderList(cx: Scope) -> impl IntoView {
     );
 
     let orders_loading = move || {
-        view! { cx, <div>{if orders_resource.loading().get() { "Loading..." } else { "" }}</div> }
+        if orders_resource.loading().get() {
+            view! {cx, <Loading /> }
+        } else {
+            view! {cx, <EmptyView />}
+        }
     };
 
     view! { cx,

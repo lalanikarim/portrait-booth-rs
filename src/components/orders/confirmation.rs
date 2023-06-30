@@ -9,23 +9,26 @@ pub async fn store_stripe_confirmation(
     cx: Scope,
     params: ConfirmationParams,
 ) -> Result<Order, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should be present");
     let ConfirmationParams {
         order_ref,
         payment_ref,
     } = params;
-    match Order::get_by_order_confirmation(order_ref.clone(), &pool).await {
+    match crate::pool(cx) {
         Err(e) => Err(e),
-        Ok(None) => Err(ServerFnError::Args("Invalid Order Reference".to_string())),
-        Ok(Some(order)) => {
-            match Order::update_order_confirmation(order_ref.clone(), payment_ref, &pool).await {
-                Err(e) => Err(e),
-                Ok(false) => Err(ServerFnError::ServerError(
-                    "Unable to save order confirmation".to_string(),
-                )),
-                Ok(true) => Ok(order),
+        Ok(pool) => match Order::get_by_order_confirmation(order_ref.clone(), &pool).await {
+            Err(e) => Err(e),
+            Ok(None) => Err(ServerFnError::Args("Invalid Order Reference".to_string())),
+            Ok(Some(order)) => {
+                match Order::update_order_confirmation(order_ref.clone(), payment_ref, &pool).await
+                {
+                    Err(e) => Err(e),
+                    Ok(false) => Err(ServerFnError::ServerError(
+                        "Unable to save order confirmation".to_string(),
+                    )),
+                    Ok(true) => Ok(order),
+                }
             }
-        }
+        },
     }
 }
 

@@ -24,25 +24,29 @@ pub async fn add_order_item_request(
     file_name: String,
     mime_type: String,
 ) -> Result<OrderItem, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should be present");
     let prefix = format!("/{:0>6}/{:?}", order.id, mode).to_lowercase();
-    match get_remaining_uploads(cx, order.clone(), mode).await {
-        Err(e) => Err(to_server_fn_error(e)),
-        Ok(0) => Err(ServerFnError::ServerError(
-            "No more uploads allowed".to_string(),
-        )),
-        Ok(_) => match crate::server::storage::create_presigned_url_pair(
-            prefix,
-            file_name.clone(),
-            mime_type,
-        )
-        .await
-        {
-            Err(e) => Err(e),
-            Ok((get_url, put_url)) => {
-                order
-                    .add_order_item(file_name.clone(), mode, get_url, put_url, &pool)
-                    .await
+    match crate::pool(cx) {
+        Err(e) => Err(e),
+        Ok(pool) => match get_remaining_uploads(cx, order.clone(), mode).await {
+            Err(e) => Err(to_server_fn_error(e)),
+            Ok(0) => Err(ServerFnError::ServerError(
+                "No more uploads allowed".to_string(),
+            )),
+            Ok(_) => {
+                match crate::server::storage::create_presigned_url_pair(
+                    prefix,
+                    file_name.clone(),
+                    mime_type,
+                )
+                .await
+                {
+                    Err(e) => Err(e),
+                    Ok((get_url, put_url)) => {
+                        order
+                            .add_order_item(file_name.clone(), mode, get_url, put_url, &pool)
+                            .await
+                    }
+                }
             }
         },
     }
@@ -54,8 +58,10 @@ pub async fn get_remaining_uploads(
     order: Order,
     mode: UploaderMode,
 ) -> Result<u64, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should be present");
-    order.remaining_order_items(mode, &pool).await
+    match crate::pool(cx) {
+        Err(e) => Err(e),
+        Ok(pool) => order.remaining_order_items(mode, &pool).await,
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
@@ -103,7 +109,6 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         let buffer = JsFuture::from(file.array_buffer())
             .await
             .expect("JS Future for buffer should resolve");
-        log!("Buffer: {buffer:#?}");
         opts.body(Some(&buffer));
         let request =
             Request::new_with_str_and_init(&url, &opts).expect("Request init should work");

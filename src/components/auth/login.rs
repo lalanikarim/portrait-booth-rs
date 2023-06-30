@@ -25,31 +25,30 @@ async fn login_request(
     password: String,
 ) -> Result<LoginResponse, ServerFnError> {
     use crate::models::user::UserStatus;
-    let auth = crate::auth::auth(cx).expect("Auth must be present");
-    let pool = crate::pool(cx).expect("MySQL pool must be present");
-    let response = match User::get_by_username(username, &pool).await.ok() {
-        None => LoginResponse::InvalidCredentials,
-        Some(user) => {
-            if let Some(true) = bcrypt::verify(
+    match crate::server::pool_and_auth(cx) {
+        Err(e) => Err(e),
+        Ok((pool, auth)) => {
+            let Ok(user) = User::get_by_username(username, &pool).await else {
+                return Ok(LoginResponse::InvalidCredentials);
+            };
+            let Ok(true) = bcrypt::verify(
                 password,
                 &user.clone().password_hash.unwrap_or("".to_string()),
-            )
-            .ok()
-            {
-                match user.status {
-                    UserStatus::Disabled => LoginResponse::LockedOut,
-                    UserStatus::NotActivatedYet => LoginResponse::NotActivated,
-                    UserStatus::Active => {
-                        auth.login_user(user.id);
-                        LoginResponse::LoggedIn(user)
-                    }
+            ) else {
+                return Ok(LoginResponse::InvalidCredentials);
+            };
+
+            let response = match user.status {
+                UserStatus::Disabled => LoginResponse::LockedOut,
+                UserStatus::NotActivatedYet => LoginResponse::NotActivated,
+                UserStatus::Active => {
+                    auth.login_user(user.id);
+                    LoginResponse::LoggedIn(user)
                 }
-            } else {
-                LoginResponse::InvalidCredentials
-            }
+            };
+            Ok(response)
         }
-    };
-    Ok(response)
+    }
 }
 
 #[component]

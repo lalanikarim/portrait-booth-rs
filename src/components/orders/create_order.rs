@@ -16,17 +16,20 @@ pub async fn create_order_request(
         ));
     }
     use crate::models::{order::Order, user::User};
-    let pool = crate::pool(cx).expect("Pool should be present");
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
-    let User {
-        id: customer_id, ..
-    } = auth.current_user.expect("No logged in user");
-    match Order::create(customer_id, no_of_photos, &pool).await {
+    match crate::server::pool_and_current_user(cx) {
         Err(e) => Err(e),
-        Ok(None) => Ok(None),
-        Ok(Some(order)) => UserOrder::get_by_order_id(order.id, &pool)
-            .await
-            .map(|o| Some(o)),
+        Ok((
+            pool,
+            User {
+                id: customer_id, ..
+            },
+        )) => match Order::create(customer_id, no_of_photos, &pool).await {
+            Err(e) => Err(e),
+            Ok(None) => Ok(None),
+            Ok(Some(order)) => UserOrder::get_by_order_id(order.id, &pool)
+                .await
+                .map(|o| Some(o)),
+        },
     }
 }
 

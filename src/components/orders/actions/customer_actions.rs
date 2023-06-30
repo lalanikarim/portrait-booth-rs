@@ -9,18 +9,22 @@ use crate::models::order::Order;
 
 #[server(DeleteOrderRequest, "/api")]
 pub async fn delete_order_request(cx: Scope, order_id: u64) -> Result<bool, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should be present");
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
-    let current_user = auth.current_user.expect("Logged in user should be present");
-    Order::delete(order_id, current_user.id, &pool).await
+    match crate::server::pool_and_current_user(cx) {
+        Err(e) => Err(e),
+        Ok((pool, crate::models::user::User { id, .. })) => {
+            Order::delete(order_id, id, &pool).await
+        }
+    }
 }
 
 #[server(StartCashPaymentRequest, "/api")]
 pub async fn start_cash_payment_request(cx: Scope, order_id: u64) -> Result<bool, ServerFnError> {
-    let pool = crate::pool(cx).expect("Pool should be present");
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
-    let current_user = auth.current_user.expect("Logged in user should be present");
-    Order::start_payment_cash(order_id, current_user.id, &pool).await
+    match crate::server::pool_and_current_user(cx) {
+        Err(e) => Err(e),
+        Ok((pool, crate::models::user::User { id, .. })) => {
+            Order::start_payment_cash(order_id, id, &pool).await
+        }
+    }
 }
 
 #[server(StartStripePaymentRequest, "/api")]
@@ -29,29 +33,30 @@ pub async fn start_stripe_payment_request(
     order_id: u64,
 ) -> Result<String, ServerFnError> {
     use crate::server::stripe::get_payment_link;
-    let pool = crate::pool(cx).expect("Pool should be present");
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
-    let current_user = auth.current_user.expect("Logged in user should be present");
-    let order_ref = format!("Email: {}, Order #:{}", current_user.email, order_id);
-
-    match Order::start_payment_stripe(order_id, current_user.id, order_ref, &pool).await {
-        Ok(true) => match Order::get_by_id(order_id, &pool).await {
-            Err(e) => Err(e),
-            Ok(None) => Err(ServerFnError::ServerError(
-                "Unable to fetch order".to_string(),
-            )),
-            Ok(Some(order)) => get_payment_link(cx, order).await,
-        },
-        Ok(false) => Err(ServerFnError::ServerError(
-            "Error starting Stripe Request".to_string(),
-        )),
+    match crate::server::pool_and_current_user(cx) {
         Err(e) => Err(e),
+        Ok((pool, current_user)) => {
+            let order_ref = format!("Email: {}, Order #:{}", current_user.email, order_id);
+
+            match Order::start_payment_stripe(order_id, current_user.id, order_ref, &pool).await {
+                Ok(true) => match Order::get_by_id(order_id, &pool).await {
+                    Err(e) => Err(e),
+                    Ok(None) => Err(ServerFnError::ServerError(
+                        "Unable to fetch order".to_string(),
+                    )),
+                    Ok(Some(order)) => get_payment_link(cx, order).await,
+                },
+                Ok(false) => Err(ServerFnError::ServerError(
+                    "Error starting Stripe Request".to_string(),
+                )),
+                Err(e) => Err(e),
+            }
+        }
     }
 }
 #[component]
 pub fn CustomerActions(cx: Scope, order: UserOrder) -> impl IntoView {
     let auth_user = use_context::<ReadSignal<AuthUser>>(cx).expect("AuthUser should be present");
-    log!("User: {:#?}, Order: {order:#?}", auth_user.get());
     if let Some(user) = auth_user.get() {
         if user.id != order.customer_id {
             return view! {cx,<div />}.into_view(cx);

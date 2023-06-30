@@ -11,8 +11,7 @@ use crate::{
 };
 #[server(GetLoggedInUser, "/api")]
 pub async fn get_logged_in_user(cx: Scope) -> Result<Option<User>, ServerFnError> {
-    let auth = crate::auth::auth(cx).expect("Auth should be present");
-    Ok(auth.current_user)
+    crate::auth::auth(cx).map(|auth| auth.current_user)
 }
 
 pub type AuthUser = Option<User>;

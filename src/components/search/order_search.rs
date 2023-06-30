@@ -28,13 +28,15 @@ pub fn OrderSearch(
         let name = if name.len() > 0 { Some(name) } else { None };
         let email = if email.len() > 0 { Some(email) } else { None };
         let phone = if phone.len() > 0 { Some(phone) } else { None };
-        let form = OrderSearchForm {
-            order_no,
-            name,
-            email,
-            phone,
-        };
-        order_search_action.dispatch(OrderSearchRequest { form });
+        if order_no.is_some() || name.is_some() || email.is_some() || phone.is_some() {
+            let form = OrderSearchForm {
+                order_no,
+                name,
+                email,
+                phone,
+            };
+            order_search_action.dispatch(OrderSearchRequest { form });
+        }
     };
     view! { cx,
         <div class="container">
