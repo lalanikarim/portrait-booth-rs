@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
-cargo clean
+# todo: put cargo clean behind a parameter
+# cargo clean
 TARGET_CC=x86_64-linux-musl-gcc LEPTOS_BIN_TARGET_TRIPLE=x86_64-unknown-linux-musl SQLX_OFFLINE=true cargo leptos build -r
 rm -f -r deploy/*
 mkdir deploy/app
