@@ -1,12 +1,61 @@
 use leptos::*;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen_futures::JsFuture;
 use web_sys::{DragEvent, Request, RequestInit, RequestMode};
 
-use crate::models::order::Order;
+use crate::models::{order::Order, order_item::OrderItem};
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "ssr")] {
+        use crate::to_server_fn_error;
+    }
+}
 
 #[server(GetPreSignedPutUrl, "/api")]
 pub async fn get_pre_signed_put_url(cx: Scope, path: String) -> Result<String, ServerFnError> {
     crate::server::storage::create_presigned_put_url(path).await
+}
+
+#[server(AddOrderItemRequest, "/api")]
+pub async fn add_order_item_request(
+    cx: Scope,
+    order: Order,
+    mode: UploaderMode,
+    file_name: String,
+    mime_type: String,
+) -> Result<OrderItem, ServerFnError> {
+    let pool = crate::pool(cx).expect("Pool should be present");
+    let prefix = format!("/{:0>6}/{:?}", order.id, mode).to_lowercase();
+    match get_remaining_uploads(cx, order.clone(), mode).await {
+        Err(e) => Err(to_server_fn_error(e)),
+        Ok(0) => Err(ServerFnError::ServerError(
+            "No more uploads allowed".to_string(),
+        )),
+        Ok(_) => match crate::server::storage::create_presigned_url_pair(
+            prefix,
+            file_name.clone(),
+            mime_type,
+        )
+        .await
+        {
+            Err(e) => Err(e),
+            Ok((get_url, put_url)) => {
+                order
+                    .add_order_item(file_name.clone(), mode, get_url, put_url, &pool)
+                    .await
+            }
+        },
+    }
+}
+
+#[server(GetRemainingUploads, "/api")]
+pub async fn get_remaining_uploads(
+    cx: Scope,
+    order: Order,
+    mode: UploaderMode,
+) -> Result<u64, ServerFnError> {
+    let pool = crate::pool(cx).expect("Pool should be present");
+    order.remaining_order_items(mode, &pool).await
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
@@ -17,12 +66,24 @@ pub enum FileUploadState {
     Error,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
-pub enum UploaderMode {
-    Original,
-    Thumbnail,
-    Processed,
+pub fn get_mime_type(file_name: String) -> Result<String, ServerFnError> {
+    let splits: Vec<&str> = file_name.split(".").collect();
+    let Some(ext) = splits.last() else {
+        return Err(ServerFnError::Args("Invalid file name received.".to_string()));
+    };
+    let ext = ext.to_lowercase();
+    let ext = ext.as_str();
+
+    let mime_type = match ext {
+        "jpg" => "image/jpeg",
+        "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        _ => "application/octet-stream",
+    };
+    Ok(mime_type.to_string())
 }
+
+pub type UploaderMode = crate::models::order_item::Mode;
 
 #[component]
 pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
@@ -33,10 +94,17 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         form_data
             .append_with_blob_and_filename(&file.name(), &file, &file.name())
             .expect("Form Data append should work");
+        form_data
+            .set_with_str("content-type", &file.type_())
+            .expect("Form Data set with str should work");
         let mut opts = RequestInit::new();
         opts.method("PUT");
         opts.mode(RequestMode::Cors);
-        opts.body(Some(&form_data));
+        let buffer = JsFuture::from(file.array_buffer())
+            .await
+            .expect("JS Future for buffer should resolve");
+        log!("Buffer: {buffer:#?}");
+        opts.body(Some(&buffer));
         let request =
             Request::new_with_str_and_init(&url, &opts).expect("Request init should work");
         let window = web_sys::window().expect("Window should work");
@@ -44,8 +112,10 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
             .await
             .expect("JS Future await should work");
     };
+
     let on_drop = move |ev: DragEvent| {
         let mode = mode.clone();
+        let order = order.clone();
         ev.prevent_default();
         let dt = ev.data_transfer().unwrap();
         let items = dt.items();
@@ -66,9 +136,11 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         }
         spawn_local(async move {
             for file in files.into_iter() {
-                let prefix = format!("/{:0>6}/{:?}", order.id, mode).to_lowercase();
-                let full_file_name = format!("{}/{}", prefix, &file.name());
                 let file_name = file.name();
+                let Ok(mime_type) = get_mime_type(file_name.clone()) else {
+                    log!("Invalid file extension");
+                    return;
+                };
                 set_files_to_upload.update(|f| {
                     for elem in f.iter_mut() {
                         if elem.0 == file_name.clone() {
@@ -76,9 +148,11 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                         }
                     }
                 });
-                match get_pre_signed_put_url(cx, full_file_name).await {
-                    Ok(url) => {
-                        upload_file(file, url).await;
+                match add_order_item_request(cx, order.clone(), mode, file_name.clone(), mime_type)
+                    .await
+                {
+                    Ok(OrderItem { put_url, .. }) => {
+                        upload_file(file, put_url).await;
                         set_files_to_upload.update(|f| {
                             for elem in f.iter_mut() {
                                 if elem.0 == file_name.clone() {
@@ -98,6 +172,28 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                         });
                     }
                 }
+                //match get_pre_signed_put_url(cx, full_file_name).await {
+                //    Ok(url) => {
+                //        upload_file(file, url).await;
+                //        set_files_to_upload.update(|f| {
+                //            for elem in f.iter_mut() {
+                //                if elem.0 == file_name.clone() {
+                //                    *elem = (file_name.clone(), FileUploadState::Done);
+                //                }
+                //            }
+                //        });
+                //    }
+                //    Err(e) => {
+                //        error!("{:#?}", e);
+                //        set_files_to_upload.update(|f| {
+                //            for elem in f.iter_mut() {
+                //                if elem.0 == file_name.clone() {
+                //                    *elem = (file_name.clone(), FileUploadState::Error);
+                //                }
+                //            }
+                //        });
+                //    }
+                //}
             }
         });
     };
@@ -108,24 +204,24 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
             .map(move |(file, state)| {
                 let state = state.to_owned();
                 view! { cx,
-                    <div>
-                        <span>{file}</span>
-                        {move || match state {
-                            FileUploadState::Added => {
-                                view! { cx, <span class="italic text-stone-400">" added"</span> }
-                            }
-                            FileUploadState::Uploading => {
-                                view! { cx, <span class="italic text-green-400">" uploading"</span> }
-                            }
-                            FileUploadState::Done => {
-                                view! { cx, <span class="italic text-green-400">" done"</span> }
-                            }
-                            FileUploadState::Error => {
-                                view! { cx, <span class="italic text-red-400">" error"</span> }
-                            }
-                        }}
-                    </div>
-                }
+                <div>
+                    <span>{file}</span>
+                    {move || match state {
+                        FileUploadState::Added => {
+                            view! { cx, <span class="italic text-stone-400">" added"</span> }
+                        }
+                        FileUploadState::Uploading => {
+                            view! { cx, <span class="italic text-green-400">" uploading"</span> }
+                        }
+                        FileUploadState::Done => {
+                            view! { cx, <span class="italic text-green-400">" done"</span> }
+                        }
+                        FileUploadState::Error => {
+                            view! { cx, <span class="italic text-red-400">" error"</span> }
+                        }
+                    }}
+                </div>
+            }
             })
             .collect::<Vec<_>>()
     };

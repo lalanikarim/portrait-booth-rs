@@ -4,7 +4,7 @@ use crate::{
     components::{
         app::AuthUser,
         orders::{
-            actions::cashier_actions::CashierActions, actions::customer_actions::CustomerActions,
+            actions::cashier_actions::CashierActions, actions::{customer_actions::CustomerActions, operator_actions::OperatorActions},
         },
         util::loading::Loading,
         util::not_authorized::NotAuthorized,
@@ -71,6 +71,7 @@ pub fn OrderDetails(cx: Scope, order: UserOrder) -> impl IntoView {
             }>
                 <CustomerActions order=order.clone()/>
                 <CashierActions order=order.clone()/>
+                <OperatorActions order=order.clone()/>
             </Suspense>
         </div>
     }

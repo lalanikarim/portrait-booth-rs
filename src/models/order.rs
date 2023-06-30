@@ -8,6 +8,7 @@ cfg_if::cfg_if! {
         use crate::server::to_server_fn_error;
         use super::user_order::UserOrder;
         use super::pricing::Pricing;
+        use super::order_item::Mode;
     } else {
 
         use dummy_macros::*;
@@ -47,9 +48,12 @@ pub enum OrderStatus {
     PaymentPending = 1,
     PaymentError = 2,
     Paid = 3,
-    Uploaded = 4,
-    InProcess = 5,
-    Processed = 6,
+    ReadyToUpload = 4,
+    Uploading = 5,
+    Uploaded = 6,
+    ReadyToProcess = 7,
+    InProcess = 8,
+    Processed = 9,
 }
 
 impl Default for OrderStatus {
@@ -158,6 +162,24 @@ impl Order {
             .fetch_optional(pool)
             .await
             .map_err(|e| to_server_fn_error(e))
+    }
+
+    pub async fn update_status(
+        id: u64,
+        from: OrderStatus,
+        to: OrderStatus,
+        pool: &MySqlPool,
+    ) -> Result<bool, ServerFnError> {
+        sqlx::query!(
+            "UPDATE `orders` SET `status` = ? WHERE `status` = ? AND `id` = ?",
+            to,
+            from,
+            id
+        )
+        .execute(pool)
+        .await
+        .map(|result| result.rows_affected() > 0)
+        .map_err(|e| to_server_fn_error(e))
     }
     pub async fn delete(
         id: u64,
@@ -329,38 +351,57 @@ impl Order {
     }
 
     pub async fn get_order_items(&self, pool: &MySqlPool) -> Result<Vec<OrderItem>, ServerFnError> {
-        sqlx::query_as::<_, OrderItem>("SELECT * FROM `order_items` where order_id = ?")
-            .bind(self.id)
+        sqlx::query_as!(OrderItem,"SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `order_id` = ?",self.id)
             .fetch_all(pool)
             .await
             .map_err(|e| to_server_fn_error(e))
     }
+    pub async fn remaining_order_items(
+        &self,
+        mode: Mode,
+        pool: &MySqlPool,
+    ) -> Result<u64, ServerFnError> {
+        sqlx::query!(
+            "SELECT COUNT(1) AS count FROM `order_items` WHERE `order_id` = ? AND `mode` = ?",
+            self.id,
+            mode
+        )
+        .fetch_one(pool)
+        .await
+        .map_err(|e| to_server_fn_error(e))
+        .map(|result| self.no_of_photos - result.count as u64)
+    }
 
     pub async fn add_order_item(
         &self,
-        original_get_url: String,
-        original_put_url: String,
-        thumbnail_get_url: String,
-        thumbnail_put_url: String,
-        processed_get_url: String,
-        processed_put_url: String,
+        file_name: String,
+        mode: Mode,
+        get_url: String,
+        put_url: String,
         pool: &MySqlPool,
-    ) -> Result<bool, ServerFnError> {
-        sqlx::query!(
-            "INSERT into `order_items` (order_id,original_get_url,original_put_url,thumbnail_get_url,thumbnail_put_url,processed_get_url,processed_put_url,created_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
-            self.id,
-            original_get_url,
-            original_put_url,
-            thumbnail_get_url,
-            thumbnail_put_url,
-            processed_get_url,
-            processed_put_url,
-            Local::now()
-        )
-        .execute(pool)
-        .await
-        .map(|result| result.rows_affected() > 0)
-        .map_err(|e| to_server_fn_error(e))
+    ) -> Result<OrderItem, ServerFnError> {
+        match sqlx::query!("SELECT COUNT(1) as count FROM `order_items` WHERE order_id = ? AND mode = ?",self.id,mode).fetch_one(pool).await {
+            Err(e) => Err(to_server_fn_error(e)),
+            Ok(result) => match self.no_of_photos > result.count as u64 {
+                false => Err(ServerFnError::ServerError("No more uploads allowed".to_string())),
+                true => {
+                    match sqlx::query!(
+                        "INSERT into `order_items` (order_id,file_name,mode,get_url,put_url,created_at) values (?, ?, ?, ?, ?, ? )",
+                        self.id,
+                        file_name,
+                        mode,
+                        get_url,
+                        put_url,
+                        Local::now()
+                    )
+                    .execute(pool)
+                    .await {
+                            Err(e) => Err(to_server_fn_error(e)),
+                            Ok(result) => OrderItem::get_by_id(result.last_insert_id(),&pool).await
+                        }
+                }
+            }
+        }
     }
 
     pub async fn update_order_confirmation(

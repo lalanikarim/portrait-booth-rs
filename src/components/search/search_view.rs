@@ -3,14 +3,8 @@ use leptos::*;
 use crate::{
     components::{
         app::AuthUser,
-        files::{
-            file_list::FileList,
-            uploader::{Uploader, UploaderMode},
-        },
         orders::order_details::OrderDetails,
-        search::{order_search::OrderSearch, search_results::SearchResults},
-        util::empty_view::EmptyView,
-        util::loading::Loading,
+        search::{order_search::OrderSearch, search_results::SearchResults, operator_uploader::OperatorUploader},
     },
     models::{
         order::{Order, OrderStatus},
@@ -64,41 +58,10 @@ pub fn SearchView(cx: Scope) -> impl IntoView {
                         view! { cx, <OrderDetails order=order.clone()/> },
                     );
                 if let Some(user) = auth_user.get() {
-                    if user.role == Role::Operator && order.status == OrderStatus::Paid {
+                    if user.role == Role::Operator && order.status == OrderStatus::Uploading {
                         views
                             .push(
-                                view! { cx,
-                                    <Suspense fallback=move || {
-                                        view! { cx, <Loading/> }
-                                    }>
-                                        {move || {
-                                            match order_resource.read(cx) {
-                                                None => {
-                                                    view! { cx, <Loading/> }
-                                                }
-                                                Some(resource) => {
-                                                    match resource {
-                                                        Ok(Some(order)) => {
-                                                            let mode = UploaderMode::Original;
-                                                            view! { cx,
-                                                                <FileList order=order.clone() mode/>
-                                                                <Uploader order=order.clone() mode/>
-                                                            }
-                                                                .into_view(cx)
-                                                        }
-                                                        Ok(None) => {
-                                                            view! { cx, <EmptyView/> }
-                                                        }
-                                                        Err(e) => {
-                                                            view! { cx, <div class="red">{e.to_string()}</div> }
-                                                                .into_view(cx)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }}
-                                    </Suspense>
-                                },
+                                view!{cx,<OperatorUploader order_resource />}
                             );
                     }
                 }

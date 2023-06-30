@@ -50,6 +50,7 @@ js-sys = "0.3.64"
 wasm-bindgen-futures = "0.4.37"
 lettre = { version = "0.10.4", default-features = false, features = ["tokio1-rustls-tls","smtp-transport","builder","tokio1"], optional = true }
 openssl = { version = "0.10", features = ["vendored"], optional = true }
+gloo-file = { version = "0.2.3", features = ["futures"]  }
 
 [features]
 default = ["ssr"]

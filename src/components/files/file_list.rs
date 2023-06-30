@@ -2,12 +2,18 @@ use leptos::*;
 
 use crate::{
     components::{files::uploader::UploaderMode, util::loading::Loading},
-    models::order::Order,
+    models::{order::Order, order_item::OrderItem},
 };
 
 #[server(GetFiles, "/api")]
 pub async fn get_files(cx: Scope, prefix: String) -> Result<Vec<String>, ServerFnError> {
     crate::server::storage::get_files(prefix).await
+}
+
+#[server(GetOrderItems, "/api")]
+pub async fn get_order_items(cx: Scope, order: Order) -> Result<Vec<OrderItem>, ServerFnError> {
+    let pool = crate::pool(cx).expect("Pool should be present");
+    order.get_order_items(&pool).await
 }
 
 #[server(GetUrlRequest, "/api")]
@@ -25,6 +31,14 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         cx,
         || (),
         move |_| async move { get_files(cx, prefix.get_untracked()).await },
+    );
+    let get_order_items = create_resource(
+        cx,
+        || (),
+        move |_| {
+            let order = order.clone();
+            async move { get_order_items(cx, order).await }
+        },
     );
     let open_file = move |file_name: String| {
         if file_name.ends_with("/") {
@@ -54,40 +68,69 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         <div class="container">
             <h2 class="header">"Files"</h2>
             <Suspense fallback=move || {
-                view! { cx, <Loading /> }
-            }><div class="left-justified">
-                {move || match get_files_resource.read(cx) {
-                    None => {
-                        view! { cx, <Loading /> }
-                            .into_view(cx)
-                    }
-                    Some(files) => {
-                        match files {
-                            Err(e) => {
-                                view! { cx, <div>{e.to_string()}</div> }
-                                    .into_view(cx)
-                            }
-                            Ok(files) => {
-                            if files.is_empty() {
-                                view!{cx,<div class="text-center w-full">"Not files uploaded"</div>}.into_view(cx)
-                            } else {
-                                files
-                                    .iter()
-                                    .map(|file| {
-                                    let file = file.to_owned();
-                                    let file1 = file.clone();
+                view! { cx, <Loading/> }
+            }>
+                <div class="flex flex-wrap">
+                    {move || match get_order_items.read(cx) {
+                        None => view! { cx, <Loading/> }.into_view(cx),
+                        Some(order_items) => {
+                            match order_items {
+                                Err(e) => view! { cx, <div>{e.to_string()}</div> }.into_view(cx),
+                                Ok(order_items) => {
+                                    if order_items.is_empty() {
                                         view! { cx,
-                                            <div on:click=move |_| {
-                                                open_file(file1.clone());
-                                            }>{file}</div>
+                                            <div class="text-center w-full">"Not files uploaded"</div>
                                         }
-                                    })
-                                    .collect_view(cx)
-                            }
+                                            .into_view(cx)
+                                    } else {
+                                        order_items
+                                            .iter()
+                                            .map(|order_item| {
+                                                let get_url = order_item.clone().get_url.clone();
+                                                view! { cx,
+                                                    <div class="w-48 p-2">
+                                                        <a href=&get_url>
+                                                            <img src=&get_url/>
+                                                        </a>
+                                                    </div>
+                                                }
+                                            })
+                                            .collect_view(cx)
+                                    }
+                                }
                             }
                         }
-                    }
-                }}</div>
+                    }}
+                    {move || match get_files_resource.read(cx) {
+                        None => view! { cx, <Loading/> }.into_view(cx),
+                        Some(files) => {
+                            match files {
+                                Err(e) => view! { cx, <div>{e.to_string()}</div> }.into_view(cx),
+                                Ok(files) => {
+                                    if files.is_empty() {
+                                        view! { cx,
+                                            <div class="text-center w-full">"Not files uploaded"</div>
+                                        }
+                                            .into_view(cx)
+                                    } else {
+                                        files
+                                            .iter()
+                                            .map(|file| {
+                                                let file = file.to_owned();
+                                                let file1 = file.clone();
+                                                view! { cx,
+                                                    <div on:click=move |_| {
+                                                        open_file(file1.clone());
+                                                    }>{file}</div>
+                                                }
+                                            })
+                                            .collect_view(cx)
+                                    }
+                                }
+                            }
+                        }
+                    }}
+                </div>
             </Suspense>
         </div>
     }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use leptos::ServerFnError;
 use s3::bucket::Bucket;
 use s3::creds::Credentials;
@@ -15,9 +17,6 @@ pub async fn get_bucket() -> Result<Bucket, ServerFnError> {
     let credentials = Credentials::new(Some(&access_key), Some(&secret_key), None, None, None)
         .expect("should work");
     let bucket = Bucket::new(&bucket_name, region, credentials);
-    //.expect("should be valid")
-    //.with_path_style()
-    //.with_listobjects_v1();
     bucket.map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 
@@ -61,5 +60,30 @@ pub async fn create_presigned_put_url(path: String) -> Result<String, ServerFnEr
         Ok(bucket) => bucket
             .presign_put(path, 300, None)
             .map_err(|e| to_server_fn_error(e)),
+    }
+}
+
+pub async fn create_presigned_url_pair(
+    prefix: String,
+    file_name: String,
+    mime_type: String,
+) -> Result<(String, String), ServerFnError> {
+    let path = format!("{prefix}/{file_name}");
+
+    let mut get_queries = HashMap::new();
+    get_queries.insert(
+        "response-content-disposition".into(),
+        format!("attachment; filename=\"{file_name}\""),
+    );
+    get_queries.insert("content-type".into(), mime_type.clone());
+    match get_bucket().await {
+        Err(e) => Err(e),
+        Ok(bucket) => match bucket.presign_put(path.clone(), 3600, None) {
+            Err(e) => Err(to_server_fn_error(e)),
+            Ok(put_url) => match bucket.presign_get(path, 604800, Some(get_queries)) {
+                Err(e) => Err(to_server_fn_error(e)),
+                Ok(get_url) => Ok((get_url, put_url)),
+            },
+        },
     }
 }

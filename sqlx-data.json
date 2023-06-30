@@ -1,15 +1,5 @@
 {
   "db": "MySQL",
-  "099bd2cf3d2afdcdf6136ef17430e7792f94bd04fed92fc242d10eed4e522b64": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "UPDATE `order_items` SET thumbnail_uploaded = true, thumbnail_uploaded_at = ? WHERE id = ?"
-  },
   "18528e65336b8aafb90f79242670893021ffb20a736984ca2042f6d06be31fad": {
     "describe": {
       "columns": [],
@@ -29,6 +19,135 @@
       }
     },
     "query": "UPDATE `orders` SET processor_id = ?, status = ? WHERE id = ? and status = ?"
+  },
+  "313f64ffc18f2779d86b1f7d6d3d9fedb0dd563c355067aa0eb8520fc4c69da5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "order_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4137
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "mode: _",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "file_name",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "get_url",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4113
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        },
+        {
+          "name": "put_url",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4113
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        },
+        {
+          "name": "uploaded: _",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "uploaded_at",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "created_at",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4225
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `id` = ?"
   },
   "34cd4a5d74add390a0c0e88aa740b1d18323ac12ec1f40f834e00ecbc80858d3": {
     "describe": {
@@ -221,16 +340,6 @@
     },
     "query": "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where order_ref = ?"
   },
-  "3812c10fd71be957dcf1466a001df8d8b4f8d162f1d1cdac6307773e5c0da1c2": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 8
-      }
-    },
-    "query": "INSERT into `order_items` (order_id,original_get_url,original_put_url,thumbnail_get_url,thumbnail_put_url,processed_get_url,processed_put_url,created_at) values (?, ?, ?, ?, ?, ?, ?, ?)"
-  },
   "3c698b67db8d8057311b0855e086739110c5bafc396f6edb2f02c0c1e1dfbdac": {
     "describe": {
       "columns": [],
@@ -241,15 +350,40 @@
     },
     "query": "UPDATE `orders` SET status = ? WHERE id = ? and processor_id = ? and status = ?"
   },
-  "6313612510b35996d9f44032c82ce3b5088beef22a9d64b7e97a42126f474144": {
+  "5cda779a6c34b28cd9af5e72f2db1d7b04c4c49873fd15337bcb5d0b48dca900": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "count",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
       "parameters": {
         "Right": 2
       }
     },
-    "query": "UPDATE `order_items` SET original_uploaded = true, original_uploaded_at = ? WHERE id = ?"
+    "query": "SELECT COUNT(1) as count FROM `order_items` WHERE order_id = ? AND mode = ?"
+  },
+  "6abe3a1e099a8316ef7172ab2b602b7fcb49fb7fe15752da30480026b7cda771": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "INSERT into `order_items` (order_id,file_name,mode,get_url,put_url,created_at) values (?, ?, ?, ?, ?, ? )"
   },
   "6f9b20d2733c40e01f854632d01b394c007124192d268761e59bcec00ec9ebad": {
     "describe": {
@@ -260,6 +394,135 @@
       }
     },
     "query": "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)"
+  },
+  "776b7c9247a6d7469094ea4581bb8e9d7ef12a026fbfea2498f57bade102340b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "order_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4137
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "mode: _",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "file_name",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "get_url",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4113
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        },
+        {
+          "name": "put_url",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4113
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        },
+        {
+          "name": "uploaded: _",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "uploaded_at",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "created_at",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4225
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `order_id` = ?"
   },
   "81089f5e6f4f3676dd268ae773a4a24fdcb471067c63ec3e3534486d05c52b05": {
     "describe": {
@@ -407,15 +670,15 @@
     },
     "query": "UPDATE `orders` SET no_of_photos = ?,order_total = ? WHERE id = ?"
   },
-  "a71ca6be6bbca6e87579c11166a8599630afeb22e446c194d979f825cdb99adf": {
+  "9da32aa8b6f3f7c4c9651aa8d80d63a0eb97b3119ad95df887786a35edda20e3": {
     "describe": {
       "columns": [],
       "nullable": [],
       "parameters": {
-        "Right": 2
+        "Right": 3
       }
     },
-    "query": "UPDATE `order_items` SET processed_uploaded = true, processed_uploaded_at = ? WHERE id = ?"
+    "query": "UPDATE `orders` SET `status` = ? WHERE `status` = ? AND `id` = ?"
   },
   "d020a515d65ed1a307321284c2049a6459f294e11c065afc3351d48faf37c5b0": {
     "describe": {
@@ -749,6 +1012,31 @@
     },
     "query": "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where id = ?"
   },
+  "ddbc2343e9f684939e20885ba9c38e42bd0d946a5f7dbc275551d4b3a9df1071": {
+    "describe": {
+      "columns": [
+        {
+          "name": "count",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "SELECT COUNT(1) AS count FROM `order_items` WHERE `order_id` = ? AND `mode` = ?"
+  },
   "df433190129839a13b3112c8a074529cce4a7148f6f1328fdf9fccfb5c5b9306": {
     "describe": {
       "columns": [
@@ -907,6 +1195,16 @@
       }
     },
     "query": "UPDATE `orders` SET mode_of_payment = ?, order_ref = ?, status = ? WHERE id = ? and status = ? and customer_id = ?"
+  },
+  "f4e8f730874d56070b19c08b61143f54c91f7834a35247c0087fb0e6bc298e77": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "UPDATE `order_items` SET `uploaded` = true, `uploaded_at` = ? WHERE `id` = ?"
   },
   "f52c11580c647e3d05980c4eb2c2ca5bbdc4067980210d52a9dbbd7359a0552e": {
     "describe": {
