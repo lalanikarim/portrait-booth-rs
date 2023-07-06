@@ -80,7 +80,7 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
         create_resource(cx, || (), move |_| async move { get_unit_price().await });
     provide_context(cx, unit_price_resource);
     view! { cx,
-        <h1 class="p6 text-4xl">{move || app_name.get().0}</h1>
+        <h1 class="p-6 text-4xl">{move || app_name.get().0}</h1>
         <Transition fallback=move || {
             view! { cx, <Loading/> }
         }>

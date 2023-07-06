@@ -285,11 +285,11 @@ pub fn signup(
                         } else {
                             view! { cx,
                                 <div class="flex flex-row text-center justify-between mt-8">
-                                    <button class="w-40" type="submit">
-                                        "Register"
-                                    </button>
                                     <button class="w-40 red" type="reset">
                                         "Reset"
+                                    </button>
+                                    <button class="w-40" type="submit">
+                                        "Register"
                                     </button>
                                 </div>
                             }
