@@ -395,6 +395,16 @@
     },
     "query": "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)"
   },
+  "7730d6171d8b77e8c5aa597cfe4ed1d887148c018544d4a3b9268c7e537cd77f": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "UPDATE `orders` SET `status` = ? WHERE `id` = ? AND `status` = ?"
+  },
   "81089f5e6f4f3676dd268ae773a4a24fdcb471067c63ec3e3534486d05c52b05": {
     "describe": {
       "columns": [
