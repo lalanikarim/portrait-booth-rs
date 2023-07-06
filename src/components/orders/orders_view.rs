@@ -1,7 +1,9 @@
 use leptos::*;
 
 use crate::{
-    components::orders::{order_details::OrderDetails, order_list::OrderList},
+    components::orders::{
+        create_order::CreateOrder, order_details::OrderDetails, order_list::OrderList,
+    },
     models::user_order::UserOrder,
 };
 
@@ -17,7 +19,11 @@ pub fn OrdersView(cx: Scope) -> impl IntoView {
                     view! { cx, <OrderDetails order/> }
                 }
                 None => {
-                    view! { cx, <OrderList/> }
+                    view! { cx,
+                        <CreateOrder />
+                        //<OrderList />
+                    }
+                        .into_view(cx)
                 }
             }}
         </div>

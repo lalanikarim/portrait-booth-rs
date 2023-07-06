@@ -11,7 +11,10 @@ pub fn ViewSelector(cx: Scope, user: User) -> impl IntoView {
     let create_views = move |show_views: Vec<(HomePageViews, &'static str)>| {
         show_views
             .iter()
-            .map(|(show_view, label)| view! {cx,<ViewButton show_view=*show_view label />})
+            .map(|(show_view, label)| {
+                let show_view = *show_view;
+                view! {cx,<ViewButton show_view label />}
+            })
             .collect_view(cx)
     };
     let common_views = vec![

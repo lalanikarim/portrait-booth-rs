@@ -3,9 +3,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::{
-        app::AuthUser, auth::login::Login, auth::login_otp::LoginOtp, auth::logout::Logout,
-        auth::signup::Signup, orders::orders_view::OrdersView, search::search_view::SearchView,
-        util::loading::Loading, util::view_selector::ViewSelector,
+        app::AuthUser,
+        auth::login_otp::LoginOtp,
+        auth::logout::Logout,
+        auth::signup::Signup,
+        error_template::ErrorTemplate,
+        orders::orders_view::OrdersView,
+        search::search_view::SearchView,
+        util::view_selector::ViewSelector,
+        util::{empty_view::EmptyView, loading::Loading},
     },
     models::{
         pricing::Pricing,
@@ -27,7 +33,6 @@ pub enum HomePageResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub enum ActiveView {
-    Login,
     LoginOtp,
     Signup,
 }
@@ -49,6 +54,7 @@ pub async fn home_page_request(cx: Scope) -> Result<HomePageResponse, ServerFnEr
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
 pub enum HomePageViews {
+    Loading,
     MyOrders,
     SearchOrders,
     ProcessOrders,
@@ -58,9 +64,9 @@ pub enum HomePageViews {
 pub fn HomePage(cx: Scope) -> impl IntoView {
     let set_auth_user =
         use_context::<WriteSignal<AuthUser>>(cx).expect("Set Auth User should be present");
-    let (show_view, set_show_view) = create_signal(cx, HomePageViews::MyOrders);
+    let (show_view, set_show_view) = create_signal(cx, HomePageViews::Loading);
     let completed = create_action(cx, |()| async {});
-    let (active_view, set_active_view) = create_signal(cx, ActiveView::Login);
+    let (active_view, set_active_view) = create_signal(cx, ActiveView::Signup);
     let home_page_resource = create_resource(
         cx,
         move || (completed.version().get(),),
@@ -75,103 +81,118 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
         <Transition fallback=move || {
             view! { cx, <Loading/> }
         }>
-            {move || {
-                let response = home_page_resource.read(cx);
-                match response {
-                    None => {
-                        view! { cx, <Loading/> }
-                            .into_view(cx)
-                    }
-                    Some(response) => {
-                        match response {
-                            Err(e) => {
-                                view! { cx, <div class="error">"Error: " {e.to_string()}</div> }
-                                    .into_view(cx)
-                            }
-                            Ok(HomePageResponse::LoggedIn(user)) => {
-                                set_auth_user.set(Some(user.clone()));
-                                let user_name = if user.role.clone() == Role::Customer
-                                    || user.role.clone() == Role::Anonymous
-                                {
-                                    user.name.clone()
-                                } else {
-                                    format!("{:?} ({:?})", user.name.clone(), user.role.clone())
-                                };
-                                let home_page_view = match show_view.get() {
-                                    HomePageViews::MyOrders => {
-                                        view! { cx, <OrdersView/> }
-                                    }
-                                    HomePageViews::SearchOrders => {
-                                        view! { cx, <SearchView/> }
-                                    }
-                                    HomePageViews::ProcessOrders => todo!(),
-                                };
-
-                                view! { cx,
-                                    <div>"Logged in: " {user_name}</div>
-                                    <div class="px-6 pt-2 mx-auto max-w-md flex flex-row justify-evenly">
-                                        <ViewSelector user />
-                                        <Logout completed=completed/>
-                                    </div>
-                                    {home_page_view}
+            <ErrorBoundary fallback=|cx, errors| {
+                view! { cx, <ErrorTemplate errors/> }
+            }>
+                {move || {
+                    let response = home_page_resource.read(cx);
+                    match response {
+                        None => {
+                            view! { cx, <Loading/> }
+                                .into_view(cx)
+                        }
+                        Some(response) => {
+                            match response {
+                                Err(e) => {
+                                    view! { cx, <div class="error">"Error: " {e.to_string()}</div> }
+                                        .into_view(cx)
                                 }
-                                    .into_view(cx)
-                            }
-                            Ok(HomePageResponse::NotLoggedIn) => {
-                                set_auth_user.set(None);
-                                view! { cx,
-                                    <div class="container">
-                                        <div class="flex flex-row justify-between">
-                                            <div style:display=move || if active_view.get() == ActiveView::Login { "none" } else { "inline-block" }>
-                                                <button
-                                                    on:click=move |_| {
-                                                        set_active_view.update(|v| *v = ActiveView::Login);
+                                Ok(HomePageResponse::LoggedIn(user)) => {
+                                    set_auth_user.set(Some(user.clone()));
+                                    let first_view = match user.role {
+                                        Role::Manager => HomePageViews::SearchOrders,
+                                        Role::Operator => HomePageViews::SearchOrders,
+                                        Role::Cashier => HomePageViews::SearchOrders,
+                                        Role::Processor => HomePageViews::ProcessOrders,
+                                        _ => HomePageViews::MyOrders,
+                                    };
+                                    set_show_view.set(first_view);
+                                    let user_name = if user.role.clone() == Role::Customer
+                                        || user.role.clone() == Role::Anonymous
+                                    {
+                                        user.name.clone()
+                                    } else {
+                                        format!("{:?} ({:?})", user.name.clone(), user.role.clone())
+                                    };
+                                    view! { cx,
+                                        <div>"Logged in: " {user_name}</div>
+                                        <div class="px-6 pt-2 mx-auto max-w-md flex flex-row justify-evenly">
+                                            <ViewSelector user/>
+                                            <Logout completed=completed/>
+                                        </div>
+                                        {move || match show_view.get() {
+                                            HomePageViews::MyOrders => {
+                                                view! { cx, <OrdersView/> }
+                                            }
+                                            HomePageViews::SearchOrders => {
+                                                view! { cx, <SearchView/> }
+                                            }
+                                            HomePageViews::Loading => {
+                                                view! { cx,
+                                                    <div class="container">
+                                                        <Loading/>
+                                                    </div>
+                                                }
+                                                    .into_view(cx)
+                                            }
+                                            _ => {
+                                                view! { cx, <EmptyView/> }
+                                            }
+                                        }}
+                                    }
+                                        .into_view(cx)
+                                }
+                                Ok(HomePageResponse::NotLoggedIn) => {
+                                    set_auth_user.set(None);
+                                    view! { cx,
+                                        <div class="container">
+                                            <div class="flex flex-row justify-between">
+                                                {match active_view.get() {
+                                                    ActiveView::Signup => {
+                                                        view! { cx,
+                                                            <label>"Already signed up?"</label>
+                                                            <button
+                                                                on:click=move |_| {
+                                                                    set_active_view.update(|v| *v = ActiveView::LoginOtp);
+                                                                }
+                                                                class="green w-40"
+                                                            >
+                                                                "Login with Code"
+                                                            </button>
+                                                        }
                                                     }
-                                                    class="green w-full"
-                                                >
-                                                    "Login with Password"
-                                                </button>
-                                            </div>
-                                            <div style:display=move || if active_view.get() == ActiveView::LoginOtp { "none" } else { "inline-block" }>
-                                                <button
-                                                    on:click=move |_| {
-                                                        set_active_view.update(|v| *v = ActiveView::LoginOtp);
+                                                    ActiveView::LoginOtp => {
+                                                        view! { cx,
+                                                            <label>"Haven't signed up yet?"</label>
+                                                            <button
+                                                                on:click=move |_| {
+                                                                    set_active_view.update(|v| *v = ActiveView::Signup);
+                                                                }
+                                                                class="green w-40"
+                                                            >
+                                                                "Signup"
+                                                            </button>
+                                                        }
                                                     }
-                                                    class="green w-full"
-                                                >
-                                                    "Login with Code"
-                                                </button>
-                                            </div>
-                                            <div style:display=move || if active_view.get() == ActiveView::Signup { "none" } else { "inline-block" }>
-                                                <button
-                                                    on:click=move |_| {
-                                                        set_active_view.update(|v| *v = ActiveView::Signup);
-                                                    }
-                                                    class="green w-full"
-                                                >
-                                                    "Signup"
-                                                </button>
+                                                }}
                                             </div>
                                         </div>
-                                    </div>
-                                    {move || match active_view.get() {
-                                        ActiveView::Login => {
-                                            view! { cx, <Login completed/> }
-                                        }
-                                        ActiveView::LoginOtp => {
-                                            view! { cx, <LoginOtp completed/> }
-                                        }
-                                        ActiveView::Signup => {
-                                            view! { cx, <Signup otp_on_success=true ask_password=false/> }
-                                        }
-                                    }}
+                                        {move || match active_view.get() {
+                                            ActiveView::LoginOtp => {
+                                                view! { cx, <LoginOtp completed/> }
+                                            }
+                                            ActiveView::Signup => {
+                                                view! { cx, <Signup otp_on_success=true ask_password=false/> }
+                                            }
+                                        }}
+                                    }
+                                        .into_view(cx)
                                 }
-                                    .into_view(cx)
                             }
                         }
                     }
-                }
-            }}
+                }}
+            </ErrorBoundary>
         </Transition>
     }
 }

@@ -1,10 +1,7 @@
 use leptos::{ev::MouseEvent, *};
 
 use crate::{
-    components::{
-        orders::create_order::CreateOrder,
-        util::{empty_view::EmptyView, loading::Loading},
-    },
+    components::{error_template::ErrorTemplate, util::loading::Loading},
     models::{order::OrderStatus, user_order::UserOrder},
 };
 
@@ -18,63 +15,63 @@ pub async fn get_orders_request(cx: Scope) -> Result<Vec<UserOrder>, ServerFnErr
 
 #[component]
 pub fn OrderList(cx: Scope) -> impl IntoView {
-    let order_created = create_action(cx, |()| async {});
+    let refresh_list_action = create_action(cx, |()| async {});
     let orders_resource = create_resource(
         cx,
-        move || order_created.version().get(),
+        move || refresh_list_action.version().get(),
         move |_| async move { get_orders_request(cx).await },
     );
 
-    let orders_loading = move || {
-        if orders_resource.loading().get() {
-            view! {cx, <Loading /> }
-        } else {
-            view! {cx, <EmptyView />}
-        }
-    };
-
     view! { cx,
-        <CreateOrder order_created/>
         <div class="container">
             <h2 class="header">"List of Orders"</h2>
-            {orders_loading}
+            <div class="pb-5">
+                <button on:click=move |_| refresh_list_action.dispatch(())>"Refresh"</button>
+            </div>
             {move || {
-                orders_resource
-                    .read(cx)
-                    .map(|orders| match orders {
-                        Err(_) => {
-                            view! { cx, <div class="error">"Error fetching orders"</div> }
-                                .into_view(cx)
-                        }
-                        Ok(orders) => {
-                            if orders.is_empty() {
-                                view! { cx, <div>"No orders found"</div> }
-                                    .into_view(cx)
-                            } else {
-                                view! { cx,
-                                    <table class="table-auto w-full broder-collapse border border-slate-400">
-                                        <thead class="bg-slate-50">
-                                            <tr>
-                                                <th class="border border-slate-300 p-1 w-1/5">"#"</th>
-                                                <th class="border border-slate-300 p-1 w-1/5">"No of Pics"</th>
-                                                <th class="border border-slate-300 p-1 w-1/5">"Total"</th>
-                                                <th class="border border-slate-300 p-1 w-2/5">"Status"</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {orders
-                                                .into_iter()
-                                                .map(move |order| {
-                                                    view! { cx, <OrderRow order/> }
-                                                })
-                                                .collect_view(cx)}
-                                        </tbody>
-                                    </table>
-                                }
+                match orders_resource.read(cx) {
+                    None => {
+                        view! { cx, <Loading/> }
+                    }
+                    Some(orders) => {
+                        match orders {
+                            Err(_) => {
+                                view! { cx, <div class="error">"Error fetching orders"</div> }
                                     .into_view(cx)
                             }
+                            Ok(orders) => {
+                                if orders.is_empty() {
+                                    view! { cx, <div>"No orders found"</div> }
+                                        .into_view(cx)
+                                } else {
+                                    view! { cx,
+                                        <table class="table-auto w-full broder-collapse border border-slate-400">
+                                            <thead class="bg-slate-50">
+                                                <tr>
+                                                    <th class="border border-slate-300 p-1 w-1/5">"#"</th>
+                                                    <th class="border border-slate-300 p-1 w-1/5">
+                                                        "No of Pics"
+                                                    </th>
+                                                    <th class="border border-slate-300 p-1 w-1/5">"Total"</th>
+                                                    <th class="border border-slate-300 p-1 w-2/5">"Status"</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {orders
+                                                    .into_iter()
+                                                    .map(move |order| {
+                                                        view! { cx, <OrderRow order/> }
+                                                    })
+                                                    .collect_view(cx)}
+                                            </tbody>
+                                        </table>
+                                    }
+                                        .into_view(cx)
+                                }
+                            }
                         }
-                    })
+                    }
+                }
             }}
         </div>
     }
@@ -98,7 +95,9 @@ pub fn OrderRow(cx: Scope, order: UserOrder) -> impl IntoView {
             <td class="border border-slate-300 p-1">{o.id}</td>
             <td class="border border-slate-300 p-1">{o.no_of_photos}</td>
             <td class="border border-slate-300 p-1">"$" {o.order_total}</td>
-            <td class="border border-slate-300 p-1" on:click=on_click>{status}</td>
+            <td class="border border-slate-300 p-1" on:click=on_click>
+                {status}
+            </td>
         </tr>
     }
 }
