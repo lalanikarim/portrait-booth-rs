@@ -107,7 +107,7 @@ pub fn CustomerActions(cx: Scope, order: UserOrder) -> impl IntoView {
                                 });
                         }
                     >
-                        "Pay with Stripe"
+                        "Pay with Card"
                     </button>
                     <dialog node_ref=pay_stripe_conf_ref>
                         <h2>"Redirecting to Stripe. Please wait..."</h2>

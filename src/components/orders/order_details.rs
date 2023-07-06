@@ -64,7 +64,7 @@ pub fn OrderDetails(cx: Scope, order: UserOrder) -> impl IntoView {
                 <div class="w-1/2">"Order total"</div>
                 <div class="font-bold">"$" {order.order_total}</div>
             </div>
-            <button class="m-1" type="button" on:click=move |_| set_order.update(|o| *o = None)>
+            <button class="m-1" type="button" on:click=move |_| set_order.set(None)>
                 "Back"
             </button>
             <Suspense fallback=move || {
