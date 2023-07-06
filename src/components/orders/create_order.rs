@@ -34,21 +34,20 @@ pub async fn create_order_request(
 #[component]
 pub fn CreateOrder(cx: Scope) -> impl IntoView {
     let Some(set_order) = use_context::<WriteSignal<Option<UserOrder>>>(cx) else {
-        return view!{cx,<div class="red">"Set_order write signal should be present"</div>};
+        return view! { cx, <div class="red">"Set_order write signal should be present"</div> };
     };
     let (show_error, set_error) = create_signal(cx, None);
     let (no_of_pics, set_no_of_pics) = create_signal(cx, None);
     let Some(unit_price_resource) = use_context::<Resource<(), Result<Pricing, ServerFnError>>>(cx) else { 
-        return view!{cx, <div class="red">"Unit Price Resource should be present"</div>};
+        return view! { cx, <div class="red">"Unit Price Resource should be present"</div> };
     };
-    let (base_price, unit_price) = (15, 5);
     let create_order_action = create_server_action::<CreateOrderRequest>(cx);
     let disable_create = move || create_order_action.pending().get() || no_of_pics.get().is_none();
     let create_title = move || {
         if create_order_action.pending().get() {
             "Creating..."
         } else {
-            "Create"
+            "Continue"
         }
     };
     let on_submit = move |ev: SubmitEvent| {
@@ -101,44 +100,47 @@ pub fn CreateOrder(cx: Scope) -> impl IntoView {
                         view! { cx,
                             <form on:submit=on_submit>
                                 <div class="flex flex-col text-left">
-                                    <div class="flex flex-col">
-                                        <label for="no-of-pics">"Number of Pictures"</label>
-                                        <div class="flex flex-row justify-between">
-                                            <button
-                                                class="w-1/4"
-                                                class=move || get_btn_class(1)
-                                                on:click=move |_| set_no_of_pics.set(Some(1))
-                                            >
-                                                {move || {
-                                                    let qty = 1;
-                                                    format!("{} for ${}", qty, get_price(base_price, unit_price, qty))
-                                                }}
-                                            </button>
-                                            <button
-                                                class="w-1/4"
-                                                class=move || get_btn_class(2)
-                                                on:click=move |_| set_no_of_pics.set(Some(2))
-                                            >
-                                                {move || {
-                                                    let qty = 2;
-                                                    format!("{} for ${}", qty, get_price(base_price, unit_price, qty))
-                                                }}
-                                            </button>
-                                            <button
-                                                class="w-1/4"
-                                                class=move || get_btn_class(3)
-                                                on:click=move |_| set_no_of_pics.set(Some(3))
-                                            >
-                                                {move || {
-                                                    let qty = 3;
-                                                    format!("{} for ${}", qty, get_price(base_price, unit_price, qty))
-                                                }}
-                                            </button>
+                                    <div class="flex flex-col gap-5 w-40 mx-auto">
+                                        <div class="text-center">"Number of Pictures"</div>
+                                        <button
+                                            class="w-1/2"
+                                            class=move || get_btn_class(1)
+                                            on:click=move |_| set_no_of_pics.set(Some(1))
+                                        >
+                                            {move || {
+                                                let qty = 1;
+                                                format!(
+                                                    "{} for ${}", qty, get_price(base_price, unit_price, qty)
+                                                )
+                                            }}
+                                        </button>
+                                        <button
+                                            class="w-1/2"
+                                            class=move || get_btn_class(2)
+                                            on:click=move |_| set_no_of_pics.set(Some(2))
+                                        >
+                                            {move || {
+                                                let qty = 2;
+                                                format!(
+                                                    "{} for ${}", qty, get_price(base_price, unit_price, qty)
+                                                )
+                                            }}
+                                        </button>
+                                        <button
+                                            class="w-1/2"
+                                            class=move || get_btn_class(3)
+                                            on:click=move |_| set_no_of_pics.set(Some(3))
+                                        >
+                                            {move || {
+                                                let qty = 3;
+                                                format!(
+                                                    "{} for ${}", qty, get_price(base_price, unit_price, qty)
+                                                )
+                                            }}
+                                        </button>
+                                        <div class="text-center">
+                                            "Total: " {total_price(base_price, unit_price)}
                                         </div>
-                                    </div>
-                                    <div class="flex flex-col mt-2">
-                                        <label>"Total"</label>
-                                        <div class="text-right">{total_price(base_price, unit_price)}</div>
                                     </div>
                                     <div class="text-center mt-8">
                                         <button class="w-40" type="submit" disabled=disable_create>

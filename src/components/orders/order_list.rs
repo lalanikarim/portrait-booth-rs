@@ -1,7 +1,7 @@
 use leptos::{ev::MouseEvent, *};
 
 use crate::{
-    components::{error_template::ErrorTemplate, util::loading::Loading},
+    components::util::loading::Loading,
     models::{order::OrderStatus, user_order::UserOrder},
 };
 
