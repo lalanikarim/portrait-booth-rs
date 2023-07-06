@@ -42,18 +42,10 @@ pub fn OperatorActions(cx: Scope, order: UserOrder) -> impl IntoView {
     }
     let status = order.status;
     let start_uploading_order = order.clone();
-    let uploading_done_order = order;
     let start_uploading = move |_: MouseEvent| {
         let order = start_uploading_order.clone();
         let from = OrderStatus::Paid;
         let to = OrderStatus::Uploading;
-        order_status_change_action.dispatch(OrderStatusChangeRequest { order, from, to });
-    };
-    let uploading_done = move |_: MouseEvent| {
-        let order = uploading_done_order.clone();
-
-        let from = OrderStatus::Uploading;
-        let to = OrderStatus::Uploaded;
         order_status_change_action.dispatch(OrderStatusChangeRequest { order, from, to });
     };
 
@@ -65,9 +57,6 @@ pub fn OperatorActions(cx: Scope, order: UserOrder) -> impl IntoView {
     match status {
         OrderStatus::Paid => {
             view! {cx,<button on:click=start_uploading>"Start Uploading"</button>}.into_view(cx)
-        }
-        OrderStatus::Uploading => {
-            view! {cx,<button on:click=uploading_done>"Uploading Done"</button>}.into_view(cx)
         }
         _ => view! {cx, <EmptyView/>},
     }

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{DragEvent, Request, RequestInit, RequestMode};
 
-use crate::models::{order::Order, order_item::OrderItem};
+use crate::models::{order::Order, order_item::OrderItem, user_order::UserOrder};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
@@ -14,6 +14,14 @@ cfg_if::cfg_if! {
 #[server(GetPreSignedPutUrl, "/api")]
 pub async fn get_pre_signed_put_url(cx: Scope, path: String) -> Result<String, ServerFnError> {
     crate::server::storage::create_presigned_put_url(path).await
+}
+
+#[server(GetUserOrder, "/api")]
+pub async fn get_user_order(cx: Scope, id: u64) -> Result<UserOrder, ServerFnError> {
+    match crate::pool(cx) {
+        Ok(pool) => UserOrder::get_by_order_id(id, &pool).await,
+        Err(e) => Err(e),
+    }
 }
 
 #[server(AddOrderItemRequest, "/api")]
@@ -64,6 +72,18 @@ pub async fn get_remaining_uploads(
     }
 }
 
+#[server(UpdateOrderUploadStatus, "/api")]
+pub async fn update_order_upload_status(
+    cx: Scope,
+    order: Order,
+    mode: UploaderMode,
+) -> Result<u64, ServerFnError> {
+    match crate::pool(cx) {
+        Err(e) => Err(e),
+        Ok(pool) => order.set_uploaded_for_zero_remaining(mode, &pool).await,
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub enum FileUploadState {
     Added,
@@ -92,7 +112,14 @@ pub fn get_mime_type(file_name: String) -> Result<String, ServerFnError> {
 pub type UploaderMode = crate::models::order_item::Mode;
 
 #[component]
-pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
+pub fn Uploader(
+    cx: Scope,
+    order: Order,
+    mode: UploaderMode,
+    order_resource: Resource<Option<UserOrder>, Result<Option<Order>, ServerFnError>>,
+) -> impl IntoView {
+    let set_order = use_context::<WriteSignal<Option<UserOrder>>>(cx)
+        .expect("Set Order Search should be present");
     let (files_to_upload, set_files_to_upload) =
         create_signal(cx, Vec::<(String, FileUploadState)>::new());
     let upload_file = move |file: web_sys::File, url: String| async move {
@@ -176,29 +203,15 @@ pub fn Uploader(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                             }
                         });
                     }
-                }
-                //match get_pre_signed_put_url(cx, full_file_name).await {
-                //    Ok(url) => {
-                //        upload_file(file, url).await;
-                //        set_files_to_upload.update(|f| {
-                //            for elem in f.iter_mut() {
-                //                if elem.0 == file_name.clone() {
-                //                    *elem = (file_name.clone(), FileUploadState::Done);
-                //                }
-                //            }
-                //        });
-                //    }
-                //    Err(e) => {
-                //        error!("{:#?}", e);
-                //        set_files_to_upload.update(|f| {
-                //            for elem in f.iter_mut() {
-                //                if elem.0 == file_name.clone() {
-                //                    *elem = (file_name.clone(), FileUploadState::Error);
-                //                }
-                //            }
-                //        });
-                //    }
-                //}
+                };
+                if let Ok(count) = update_order_upload_status(cx, order.clone(), mode).await {
+                    if count > 0 {
+                        if let Ok(user_order) = get_user_order(cx, order.clone().id).await {
+                            set_order.set(Some(user_order));
+                            order_resource.refetch();
+                        };
+                    }
+                };
             }
         });
     };

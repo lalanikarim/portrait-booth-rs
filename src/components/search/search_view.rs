@@ -65,7 +65,7 @@ pub fn SearchView(cx: Scope) -> impl IntoView {
                         view! { cx, <OrderDetails order=order.clone()/> },
                     );
                 if let Some(user) = auth_user.get() {
-                    if user.role == Role::Operator && order.status == OrderStatus::Uploading {
+                    if user.role == Role::Operator && (order.status == OrderStatus::Uploading || order.status == OrderStatus::Uploaded) {
                         views
                             .push(
                                 view!{cx,<OperatorUploader order_resource />}

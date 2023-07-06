@@ -9,6 +9,7 @@ cfg_if::cfg_if! {
         use super::user_order::UserOrder;
         use super::pricing::Pricing;
         use super::order_item::Mode;
+        use leptos::log;
     } else {
 
         use dummy_macros::*;
@@ -82,7 +83,6 @@ impl Order {
         customer_id: u64,
         pool: &MySqlPool,
     ) -> Result<Vec<UserOrder>, ServerFnError> {
-        
         sqlx::query_as!(
             UserOrder,
             "SELECT o.id, o.customer_id, o.no_of_photos, o.order_total, o.mode_of_payment as `mode_of_payment:_`, o.status as `status:_`, u.name, u.email, u.phone FROM `orders` o inner join `users` u where o.customer_id = u.id and u.id = ?",
@@ -374,6 +374,39 @@ impl Order {
         .await
         .map_err(to_server_fn_error)
         .map(|result| self.no_of_photos - result.count as u64)
+    }
+
+    pub async fn set_uploaded_for_zero_remaining(
+        &self,
+        mode: Mode,
+        pool: &MySqlPool,
+    ) -> Result<u64, ServerFnError> {
+        let Ok(count) = self.remaining_order_items(mode, pool).await else {
+            return Ok(0);
+        };
+        log!("Remaining: {}", count);
+        if count == 0 {
+            sqlx::query!(
+                "UPDATE `orders` SET `status` = ? WHERE `id` = ? AND `status` = ?",
+                if mode == Mode::Original {
+                    OrderStatus::Uploaded
+                } else {
+                    OrderStatus::Processed
+                },
+                self.id,
+                if mode == Mode::Original {
+                    OrderStatus::Uploading
+                } else {
+                    OrderStatus::InProcess
+                }
+            )
+            .execute(pool)
+            .await
+            .map(|result| result.rows_affected())
+            .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        } else {
+            Ok(0)
+        }
     }
 
     pub async fn add_order_item(
