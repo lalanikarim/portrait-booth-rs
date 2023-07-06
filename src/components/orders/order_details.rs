@@ -4,7 +4,8 @@ use crate::{
     components::{
         app::AuthUser,
         orders::{
-            actions::cashier_actions::CashierActions, actions::{customer_actions::CustomerActions, operator_actions::OperatorActions},
+            actions::cashier_actions::CashierActions,
+            actions::{customer_actions::CustomerActions, operator_actions::OperatorActions},
         },
         util::loading::Loading,
         util::not_authorized::NotAuthorized,
@@ -31,37 +32,37 @@ pub fn OrderDetails(cx: Scope, order: UserOrder) -> impl IntoView {
             <h2 class="header">"Order Details"</h2>
             <div class="flex flex-row text-left">
                 <div class="w-1/2">"Order #"</div>
-                <div class="">{order.id}</div>
+                <div class="font-bold">{order.id}</div>
             </div>
             <div class="flex flex-row text-left">
                 <div class="w-1/2">"No of Photos"</div>
-                <div>{order.no_of_photos}</div>
-            </div>
-            <div class="flex flex-row text-left">
-                <div class="w-1/2">"Order total"</div>
-                <div>"$" {order.order_total}</div>
+                <div class="font-bold">{order.no_of_photos}</div>
             </div>
             <div class="flex flex-row text-left">
                 <div class="w-1/2">"Name"</div>
-                <div>{order.name.clone()}</div>
+                <div class="font-bold">{order.name.clone()}</div>
             </div>
             <div class="flex flex-row text-left">
                 <div class="w-1/2">"Email"</div>
-                <div>{order.email.clone()}</div>
+                <div class="font-bold">{order.email.clone()}</div>
             </div>
             <div class="flex flex-row text-left">
                 <div class="w-1/2">"Phone"</div>
-                <div>{order.phone.clone().unwrap_or("".to_string())}</div>
+                <div class="font-bold">{order.phone.clone().unwrap_or("".to_string())}</div>
             </div>
             <div class="flex flex-row text-left">
                 <div class="w-1/2">"Status"</div>
-                <div>
+                <div class="font-bold">
                     {if order.status == OrderStatus::PaymentPending {
                         format!("{:?} ({:?})", order.status, order.mode_of_payment)
                     } else {
                         format!("{:?}", order.status)
                     }}
                 </div>
+            </div>
+            <div class="flex flex-row text-left">
+                <div class="w-1/2">"Order total"</div>
+                <div class="font-bold">"$" {order.order_total}</div>
             </div>
             <button class="m-1" type="button" on:click=move |_| set_order.update(|o| *o = None)>
                 "Back"
