@@ -21,7 +21,7 @@ pub fn OrdersView(cx: Scope) -> impl IntoView {
                 None => {
                     view! { cx,
                         <CreateOrder />
-                        //<OrderList />
+                        <OrderList />
                     }
                         .into_view(cx)
                 }

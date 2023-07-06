@@ -36,7 +36,7 @@ pub fn CreateOrder(cx: Scope) -> impl IntoView {
     let Some(set_order) = use_context::<WriteSignal<Option<UserOrder>>>(cx) else {
         return view!{cx,<div class="red">"Set_order write signal should be present"</div>};
     };
-    //let (error, set_error) = create_signal(cx, "".to_string());
+    let (show_error, set_error) = create_signal(cx, None);
     let (no_of_pics, set_no_of_pics) = create_signal(cx, None);
     let Some(unit_price_resource) = use_context::<Resource<(), Result<Pricing, ServerFnError>>>(cx) else { 
         return view!{cx, <div class="red">"Unit Price Resource should be present"</div>};
@@ -75,17 +75,17 @@ pub fn CreateOrder(cx: Scope) -> impl IntoView {
                 .unwrap_or(0)
         )
     };
-    //create_effect(cx, move |_| {
-    //    let Some(result) = create_order_action.value().get() else { return;};
-    //    match result {
-    //        Ok(order) => {
-    //            set_error.update(|e| *e = "".to_string());
-    //            set_no_of_pics.set(None);
-    //            set_order.set(order);
-    //        }
-    //        Err(e) => set_error.update(|er| *er = e.to_string()),
-    //    };
-    //});
+    create_effect(cx, move |_| {
+        let Some(result) = create_order_action.value().get() else { return;};
+        match result {
+            Ok(order) => {
+                set_error.set(None);
+                set_no_of_pics.set(None);
+                set_order.set(order);
+            }
+            Err(e) => set_error.set(Some(e.to_string())),
+        };
+    });
     view! { cx,
         <div class="container">
             <h2 class="header">"Create Order"</h2>
@@ -144,6 +144,7 @@ pub fn CreateOrder(cx: Scope) -> impl IntoView {
                                         <button class="w-40" type="submit" disabled=disable_create>
                                             {create_title}
                                         </button>
+                                        {show_error}
                                     </div>
                                 </div>
                             </form>
