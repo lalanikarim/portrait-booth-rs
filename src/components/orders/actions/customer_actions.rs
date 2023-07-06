@@ -95,7 +95,6 @@ pub fn CustomerActions(cx: Scope, order: UserOrder) -> impl IntoView {
             if order.status == OrderStatus::Created {
                 view! { cx,
                     <button
-                        class="m-1"
                         type="button"
                         on:click=move |ev| {
                             ev.prevent_default();
@@ -113,7 +112,6 @@ pub fn CustomerActions(cx: Scope, order: UserOrder) -> impl IntoView {
                         <h2>"Redirecting to Stripe. Please wait..."</h2>
                     </dialog>
                     <button
-                        class="m-1"
                         type="button"
                         on:click=move |ev| {
                             ev.prevent_default();
@@ -134,7 +132,7 @@ pub fn CustomerActions(cx: Scope, order: UserOrder) -> impl IntoView {
                     </dialog>
                     <button
                         type="button"
-                        class="red m-1"
+                        class="red"
                         on:click=move |ev| {
                             ev.prevent_default();
                             let dialog = delete_conf_ref.get().expect("dialog should be present");

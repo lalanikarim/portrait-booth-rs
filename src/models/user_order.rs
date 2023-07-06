@@ -94,6 +94,7 @@ impl UserOrder {
             }
             search_query.push_str(" lower(u.phone) = lower(?) ");
         }
+        search_query.push_str(" order by case when o.status = 3 then 1 when o.status = 1 then 2 when o.status = 6 then 3 else 10+o.status end, o.id desc");
         let mut search_query = sqlx::query_as::<MySql, UserOrder>(search_query.as_str());
         if let Some(order_no) = order_no {
             search_query = search_query.bind(order_no);
