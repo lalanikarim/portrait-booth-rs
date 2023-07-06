@@ -179,9 +179,7 @@ pub fn signup(
                 .get()
                 .expect("confirm password input should exist")
                 .value();
-            if let Err(password_error) =
-                validate_password(password.clone(), confirm_password)
-            {
+            if let Err(password_error) = validate_password(password.clone(), confirm_password) {
                 set_errors.update(move |err| err.extend_from_slice(&password_error));
                 (false, None)
             } else {
@@ -205,7 +203,6 @@ pub fn signup(
 
     view! { cx,
         <div class="container">
-            <h2 class="header">"Signup"</h2>
             <form on:submit=on_submit>
                 <div class="flex flex-col text-left">
                     <div class="flex flex-col">
@@ -289,7 +286,7 @@ pub fn signup(
                             view! { cx,
                                 <div class="flex flex-row text-center justify-between mt-8">
                                     <button class="w-40" type="submit">
-                                        "Signup"
+                                        "Register"
                                     </button>
                                     <button class="w-40 red" type="reset">
                                         "Reset"

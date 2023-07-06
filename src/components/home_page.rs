@@ -19,6 +19,8 @@ use crate::{
     },
 };
 
+use super::app::AppName;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use crate::models::order::Order;
@@ -64,6 +66,7 @@ pub enum HomePageViews {
 pub fn HomePage(cx: Scope) -> impl IntoView {
     let set_auth_user =
         use_context::<WriteSignal<AuthUser>>(cx).expect("Set Auth User should be present");
+    let app_name = use_context::<Signal<AppName>>(cx).expect("App Name should be present");
     let (show_view, set_show_view) = create_signal(cx, HomePageViews::Loading);
     let completed = create_action(cx, |()| async {});
     let (active_view, set_active_view) = create_signal(cx, ActiveView::Signup);
@@ -77,7 +80,7 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
         create_resource(cx, || (), move |_| async move { get_unit_price().await });
     provide_context(cx, unit_price_resource);
     view! { cx,
-        <h1 class="p6 text-4xl">"Portrait Booth"</h1>
+        <h1 class="p6 text-4xl">{move || app_name.get().0}</h1>
         <Transition fallback=move || {
             view! { cx, <Loading/> }
         }>
