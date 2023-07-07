@@ -21,7 +21,8 @@ pub fn ViewSelector(cx: Scope, user: User) -> impl IntoView {
         (HomePageViews::SearchOrders, "Search Orders"),
         (HomePageViews::MyOrders, "My Orders"),
     ];
-    let manager_views = common_views.clone();
+    let mut manager_views = vec![(HomePageViews::Settings, "Settings")];
+    manager_views.extend(common_views.clone());
     let cashier_views = common_views.clone();
     let operator_views = common_views;
     let processor_views = vec![(HomePageViews::ProcessOrders, "Process Orders")];

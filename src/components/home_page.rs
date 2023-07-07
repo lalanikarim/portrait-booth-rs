@@ -8,6 +8,7 @@ use crate::{
         auth::logout::Logout,
         auth::signup::Signup,
         error_template::ErrorTemplate,
+        manager::settings::Settings,
         orders::orders_view::OrdersView,
         search::search_view::SearchView,
         util::view_selector::ViewSelector,
@@ -60,6 +61,7 @@ pub enum HomePageViews {
     MyOrders,
     SearchOrders,
     ProcessOrders,
+    Settings,
 }
 
 #[component]
@@ -90,10 +92,7 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                 {move || {
                     let response = home_page_resource.read(cx);
                     match response {
-                        None => {
-                            view! { cx, <Loading/> }
-                                .into_view(cx)
-                        }
+                        None => view! { cx, <Loading/> }.into_view(cx),
                         Some(response) => {
                             match response {
                                 Err(e) => {
@@ -129,6 +128,9 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                             }
                                             HomePageViews::SearchOrders => {
                                                 view! { cx, <SearchView/> }
+                                            }
+                                            HomePageViews::Settings => {
+                                                view! { cx, <Settings/> }
                                             }
                                             HomePageViews::Loading => {
                                                 view! { cx,
@@ -185,7 +187,9 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                                 view! { cx, <LoginOtp completed/> }
                                             }
                                             ActiveView::Signup => {
-                                                view! { cx, <Signup otp_on_success=true ask_password=false/> }
+                                                view! { cx,
+                                                    <Signup otp_on_success=true ask_password=false/>
+                                                }
                                             }
                                         }}
                                     }

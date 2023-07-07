@@ -12,3 +12,8 @@ pub fn derive_fn_type(_items: TokenStream) -> TokenStream {
     //"pub fn dummy_type() -> &'static str { \"dummy\" }"
     "/* dummy */".parse().unwrap()
 }
+
+#[proc_macro_attribute]
+pub fn sqlx(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
