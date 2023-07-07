@@ -1,9 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
-
-
-
 cfg_if::cfg_if! {
     if #[cfg(feature = "ssr")] {
         use sqlx::{FromRow, Type};
@@ -78,11 +74,23 @@ impl User {
             .map_err(to_server_fn_error)
     }
 
+    pub async fn get_all_staff(pool: &MySqlPool) -> Result<Vec<Self>, ServerFnError> {
+        sqlx::query_as!(User,"SELECT id,name,email,phone,password_hash,otp_secret,role as `role:_`,status as `status: _` from `users` WHERE role not in (?,?)", Role::Anonymous, Role::Customer).fetch_all(pool).await.map_err(to_server_fn_error)
+    }
+
     pub async fn get_by_id(id: u64, pool: &MySqlPool) -> Result<Self, ServerFnError> {
         sqlx::query_as!(User,"SELECT id,name,email,phone,password_hash,otp_secret,role as `role:_`,status as `status: _` from `users` WHERE id = ?", id)
             .fetch_one(pool)
             .await
             .map_err(to_server_fn_error)
+    }
+
+    pub async fn change_role(id: u64, role: Role, pool: &MySqlPool) -> Result<bool, ServerFnError> {
+        sqlx::query!("UPDATE `users` SET `role` = ? WHERE `id` = ?", role, id)
+            .execute(pool)
+            .await
+            .map_err(to_server_fn_error)
+            .map(|result| result.rows_affected() > 0)
     }
 
     pub async fn create(

@@ -8,7 +8,7 @@ use crate::{
         auth::logout::Logout,
         auth::signup::Signup,
         error_template::ErrorTemplate,
-        manager::settings::Settings,
+        manager::{reports::Reports, settings::Settings, users::Users},
         orders::orders_view::OrdersView,
         search::search_view::SearchView,
         util::view_selector::ViewSelector,
@@ -130,7 +130,11 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                                 view! { cx, <SearchView/> }
                                             }
                                             HomePageViews::Settings => {
-                                                view! { cx, <Settings/> }
+                                                view! { cx,
+                                                    <Settings/>
+                                                    <Reports/>
+                                                    <Users/>
+                                                }.into_view(cx)
                                             }
                                             HomePageViews::Loading => {
                                                 view! { cx,

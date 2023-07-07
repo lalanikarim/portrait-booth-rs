@@ -1,5 +1,43 @@
 {
   "db": "MySQL",
+  "1036392a7a036fe4ce41a1002b3307347167c62ed99c62a5a3490d1b9c961814": {
+    "describe": {
+      "columns": [
+        {
+          "name": "status:_",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "count",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT `status` as `status:_`, count(1) as count FROM `orders` GROUP BY `status` ORDER BY `status` DESC"
+  },
   "18528e65336b8aafb90f79242670893021ffb20a736984ca2042f6d06be31fad": {
     "describe": {
       "columns": [],
@@ -9,6 +47,16 @@
       }
     },
     "query": "UPDATE `orders` SET operator_id = ?, status = ? WHERE id = ? and status = ?"
+  },
+  "25b4c7e26a244c0e42afb0b3c37a936f362a68c1b29671f4f7cf8f39d88d89a3": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "REPLACE INTO `settings` (`name`,`value`) VALUES (?,?)"
   },
   "277d9f4dd5c16e9ffb60e17e3d19c5e00d148a9f1e81fcb77b13c611df856310": {
     "describe": {
@@ -350,6 +398,132 @@
     },
     "query": "UPDATE `orders` SET status = ? WHERE id = ? and processor_id = ? and status = ?"
   },
+  "3dce0063ea92573c0b0e1bb3a3bda385213b107ce866b43eeedd31e37809b0e8": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "phone",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "password_hash",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "otp_secret",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "role:_",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "status: _",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "SELECT id,name,email,phone,password_hash,otp_secret,role as `role:_`,status as `status: _` from `users` WHERE role not in (?,?)"
+  },
+  "4e750ef49a392d6d4e1ad2d49eab2bbddd1a9e264ec61ba00cfcfce3ac3e588b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "UPDATE `users` SET `role` = ? WHERE `id` = ?"
+  },
   "5cda779a6c34b28cd9af5e72f2db1d7b04c4c49873fd15337bcb5d0b48dca900": {
     "describe": {
       "columns": [
@@ -689,6 +863,44 @@
       }
     },
     "query": "SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `order_id` = ? and `mode` = ?"
+  },
+  "bcfd8ba5355ef6ed56e8bc3a6e66e7a6c52b6792a2f68681e1992f6207236691": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name:_",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4099
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "value",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4113
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT name as `name:_`, value FROM `settings` WHERE `name` = ?"
   },
   "d020a515d65ed1a307321284c2049a6459f294e11c065afc3351d48faf37c5b0": {
     "describe": {
