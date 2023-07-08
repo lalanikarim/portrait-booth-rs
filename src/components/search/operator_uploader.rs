@@ -31,7 +31,7 @@ pub fn OperatorUploader(
                             Ok(Some(order)) => {
                                 let mode = UploaderMode::Original;
                                 view! { cx,
-                                    <FileList order=order.clone() mode/>
+                                    <FileList order=order.clone() mode />
                                     {move || {
                                         if order.clone().status == OrderStatus::Uploading {
                                             view! { cx,

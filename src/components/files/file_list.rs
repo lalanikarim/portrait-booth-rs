@@ -136,12 +136,15 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                                                     order: order_d.clone(),
                                                     order_item: order_item.clone(),
                                                 });
+                                            set_to_delete.set(None);
                                             delete_dialog.close();
                                         };
                                         view! { cx,
                                             <div class="text-lg">"Confirm delete"</div>
                                             <img src=get_url/>
-                                            <button class="red" on:click=delete_click>"Delete"</button>
+                                            <button class="red" on:click=delete_click>
+                                                "Delete"
+                                            </button>
                                         }
                                             .into_view(cx)
                                     }
@@ -152,6 +155,7 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                             let delete_dialog = delete_dialog
                                 .get()
                                 .expect("Delete dialog should be present");
+                            set_to_delete.set(None);
                             delete_dialog.close();
                         }>"Cancel"</button>
                     </div>
