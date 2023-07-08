@@ -45,6 +45,21 @@ pub async fn get_files(prefix: String) -> Result<Vec<String>, ServerFnError> {
     }
 }
 
+pub async fn delete_file(path: String) -> Result<bool, ServerFnError> {
+    leptos::log!("Deleting {path:?}");
+    match get_bucket().await {
+        Err(e) => Err(e),
+        Ok(bucket) => bucket
+            .delete_object(path)
+            .await
+            .map_err(to_server_fn_error)
+            .map(|response| {
+                leptos::log!("{:#?}", response);
+                true
+            }),
+    }
+}
+
 pub async fn create_presigned_url(path: String) -> Result<String, ServerFnError> {
     match get_bucket().await {
         Err(e) => Err(e),

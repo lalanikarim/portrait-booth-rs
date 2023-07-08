@@ -409,6 +409,39 @@ impl Order {
         }
     }
 
+    pub async fn revert_uploaded_status(
+        &self,
+        mode: Mode,
+        pool: &MySqlPool,
+    ) -> Result<u64, ServerFnError> {
+        let Ok(count) = self.remaining_order_items(mode, pool).await else {
+            return Ok(0);
+        };
+        log!("Remaining: {}", count);
+        if count < self.no_of_photos {
+            sqlx::query!(
+                "UPDATE `orders` SET `status` = ? WHERE `id` = ? AND `status` = ?",
+                if mode == Mode::Original {
+                    OrderStatus::Uploading
+                } else {
+                    OrderStatus::InProcess
+                },
+                self.id,
+                if mode == Mode::Original {
+                    OrderStatus::Uploaded
+                } else {
+                    OrderStatus::Processed
+                }
+            )
+            .execute(pool)
+            .await
+            .map(|result| result.rows_affected())
+            .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        } else {
+            Ok(0)
+        }
+    }
+
     pub async fn add_order_item(
         &self,
         file_name: String,

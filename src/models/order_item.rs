@@ -53,4 +53,12 @@ impl OrderItem {
             .await
             .map_err(to_server_fn_error)
     }
+
+    pub async fn delete(id: u64, pool: &MySqlPool) -> Result<bool, ServerFnError> {
+        sqlx::query!("DELETE FROM `order_items` WHERE `id` = ?", id)
+            .execute(pool)
+            .await
+            .map(|result| result.rows_affected() > 0)
+            .map_err(to_server_fn_error)
+    }
 }

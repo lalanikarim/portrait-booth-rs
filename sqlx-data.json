@@ -1,5 +1,15 @@
 {
   "db": "MySQL",
+  "0ba17cff4f1fd1e6773e31059d249dbf13d1185f56009fc9d53406b2f78eda70": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM `order_items` WHERE `id` = ?"
+  },
   "1036392a7a036fe4ce41a1002b3307347167c62ed99c62a5a3490d1b9c961814": {
     "describe": {
       "columns": [
