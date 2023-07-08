@@ -398,6 +398,16 @@
     },
     "query": "SELECT id, customer_id, cashier_id, operator_id, processor_id, no_of_photos, order_total, mode_of_payment as `mode_of_payment:_`, order_ref, payment_ref, status as `status:_`, created_at, payment_at FROM `orders` where order_ref = ?"
   },
+  "38569c33cd55d1adcb33488767fa33321bdb5899e92087186ffbe0b40d5c61ad": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "UPDATE `orders` SET `status` = 0, `mode_of_payment` = 0 WHERE `id` = ? AND `status` = 1"
+  },
   "3c698b67db8d8057311b0855e086739110c5bafc396f6edb2f02c0c1e1dfbdac": {
     "describe": {
       "columns": [],
