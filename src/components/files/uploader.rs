@@ -33,6 +33,15 @@ pub async fn add_order_item_request(
     mime_type: String,
 ) -> Result<OrderItem, ServerFnError> {
     let prefix = format!("/{:0>6}/{:?}", order.id, mode).to_lowercase();
+    let file_split = file_name.split('.');
+    let Some(ext) = file_split.last() else {
+        return Err(ServerFnError::Args("Invalid File Name".to_string()));
+    };
+    let file_name = format!(
+        "{}.{}",
+        uuid::Uuid::new_v4().as_hyphenated().to_string(),
+        ext
+    );
     match crate::pool(cx) {
         Err(e) => Err(e),
         Ok(pool) => match get_remaining_uploads(cx, order.clone(), mode).await {
