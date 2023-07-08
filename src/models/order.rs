@@ -129,6 +129,16 @@ impl Order {
             .map(Some)
     }
 
+    pub async fn reset_payment_status(
+        &self,
+        pool: &MySqlPool,
+    ) -> Result<Option<Order>, ServerFnError> {
+        match sqlx::query!("UPDATE `orders` SET `status` = 0, `mode_of_payment` = 0 WHERE `id` = ? AND `status` = 1", self.id).execute(pool).await {
+            Err(e) => Err(to_server_fn_error(e)),
+            Ok(_) => Order::get_by_id(self.id, &pool).await
+        }
+    }
+
     pub async fn create(
         customer_id: u64,
         no_of_photos: u64,
