@@ -10,9 +10,10 @@ use crate::{
         error_template::ErrorTemplate,
         manager::{reports::Reports, settings::Settings, users::Users},
         orders::orders_view::OrdersView,
+        processor::processor_view::ProcessorView,
         search::search_view::SearchView,
+        util::loading::Loading,
         util::view_selector::ViewSelector,
-        util::{empty_view::EmptyView, loading::Loading},
     },
     models::{
         pricing::Pricing,
@@ -134,7 +135,11 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                                     <Settings/>
                                                     <Reports/>
                                                     <Users/>
-                                                }.into_view(cx)
+                                                }
+                                                    .into_view(cx)
+                                            }
+                                            HomePageViews::ProcessOrders => {
+                                                view! { cx, <ProcessorView/> }
                                             }
                                             HomePageViews::Loading => {
                                                 view! { cx,
@@ -143,9 +148,6 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
                                                     </div>
                                                 }
                                                     .into_view(cx)
-                                            }
-                                            _ => {
-                                                view! { cx, <EmptyView/> }
                                             }
                                         }}
                                     }

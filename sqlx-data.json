@@ -10,6 +10,187 @@
     },
     "query": "DELETE FROM `order_items` WHERE `id` = ?"
   },
+  "0ce7ff526042260b18060b54e5e59b7fad5e9862e250e9b3e74a78c92bbe3054": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "no_of_photos",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "status:_",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "customer_id",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4137
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "order_total",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "mode_of_payment:_",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "cashier_id",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "processor_id",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "operator_id",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "order_ref",
+          "ordinal": 9,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "payment_ref",
+          "ordinal": 10,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "created_at",
+          "ordinal": 11,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4225
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "payment_at",
+          "ordinal": 12,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "select o.id,o.no_of_photos,o.status as `status:_`,o.customer_id,o.order_total,o.mode_of_payment as `mode_of_payment:_`, o.cashier_id,o.processor_id,operator_id,order_ref,payment_ref,created_at,payment_at\n            from orders o where o.processor_id = ? and o.status in (?,?)"
+  },
   "1036392a7a036fe4ce41a1002b3307347167c62ed99c62a5a3490d1b9c961814": {
     "describe": {
       "columns": [
@@ -57,6 +238,16 @@
       }
     },
     "query": "UPDATE `orders` SET operator_id = ?, status = ? WHERE id = ? and status = ?"
+  },
+  "18b4f24c469200ed5e6b05feb53ef752aaeb14005404ea64c26f2197be51ccb3": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "UPDATE `orders` SET `processor_id` = ?, `status` = ? WHERE `id` =(SELECT `id` FROM (SELECT `id` FROM `orders` WHERE `processor_id` is null AND `status` = ? LIMIT 1) as x)"
   },
   "25b4c7e26a244c0e42afb0b3c37a936f362a68c1b29671f4f7cf8f39d88d89a3": {
     "describe": {
@@ -1427,6 +1618,70 @@
       }
     },
     "query": "DELETE FROM `orders` WHERE id = ? and customer_id = ?"
+  },
+  "ee1e1e287fd2ef09b4ae7e62613aaa401a2e1a864f222b7f28a025a48b5d5950": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4100
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "count",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "total",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "select ifnull(u.name,'Stripe') as name, u.email, \n        count(1) as `count`, cast(sum(o.order_total) as signed) as `total`\n        from orders o \n        left join users u on u.id = o.cashier_id \n        where o.status >= 3\n        GROUP by u.name, u.email  "
   },
   "ee83c6a43875d3f346a1ff2679cb1001c993f79f9a091709ce374c9629f211a4": {
     "describe": {

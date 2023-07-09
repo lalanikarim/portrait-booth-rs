@@ -52,9 +52,9 @@ pub enum OrderStatus {
     ReadyToUpload = 4,
     Uploading = 5,
     Uploaded = 6,
-    ReadyToProcess = 7,
-    InProcess = 8,
-    Processed = 9,
+    InProcess = 7,
+    Processed = 8,
+    ReadyForDelivery = 9,
 }
 
 impl Default for OrderStatus {
@@ -531,5 +531,58 @@ impl Order {
                 "Unable to find or parse price".to_string(),
             )),
         }
+    }
+
+    async fn fetch_current_order_for_processor(
+        processor_id: u64,
+        pool: &MySqlPool,
+    ) -> Result<Option<Order>, ServerFnError> {
+        sqlx::query_as!(
+            Order,
+            "select o.id,o.no_of_photos,o.status as `status:_`,o.customer_id,o.order_total,o.mode_of_payment as `mode_of_payment:_`, o.cashier_id,o.processor_id,operator_id,order_ref,payment_ref,created_at,payment_at
+            from orders o where o.processor_id = ? and o.status in (?,?)",
+            processor_id,
+            OrderStatus::InProcess,
+            OrderStatus::Processed,
+        )
+        .fetch_optional(pool)
+        .await.map_err(to_server_fn_error)
+    }
+
+    pub async fn fetch_order_for_processor(
+        processor_id: u64,
+        pool: &MySqlPool,
+    ) -> Result<Option<Order>, ServerFnError> {
+        match Order::fetch_current_order_for_processor(processor_id, pool).await {
+            Err(e) => Err(e),
+            Ok(None) => {
+                match sqlx::query!("UPDATE `orders` SET `processor_id` = ?, `status` = ? WHERE `id` =(SELECT `id` FROM (SELECT `id` FROM `orders` WHERE `processor_id` is null AND `status` = ? LIMIT 1) as x)",processor_id,OrderStatus::InProcess,OrderStatus::Uploaded).execute(pool).await {
+                    Err(e) => Err(to_server_fn_error(e)),
+                    Ok(result) => {if result.rows_affected() > 0 {
+                        Order::fetch_current_order_for_processor(processor_id, pool).await
+                    } else {
+                            Ok(None)
+                        }
+                    }
+                }
+            },
+            Ok(response) => Ok(response),
+        }
+    }
+
+    pub async fn mark_order_ready_for_delivery(
+        &self,
+        pool: &MySqlPool,
+    ) -> Result<bool, ServerFnError> {
+        sqlx::query!(
+            "UPDATE `orders` SET `status` = ? WHERE `status` = ? AND `id` = ?",
+            OrderStatus::ReadyForDelivery,
+            OrderStatus::Processed,
+            self.id
+        )
+        .execute(pool)
+        .await
+        .map_err(to_server_fn_error)
+        .map(|result| result.rows_affected() > 0)
     }
 }

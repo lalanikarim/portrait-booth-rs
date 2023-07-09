@@ -3,10 +3,16 @@ use web_sys::MouseEvent;
 
 use crate::{
     components::{
+        app::AuthUser,
         files::uploader::UploaderMode,
         util::{empty_view::EmptyView, loading::Loading},
     },
-    models::{order::Order, order_item::OrderItem},
+    models::{
+        order::Order,
+        order_item::OrderItem,
+        user::{Role, User},
+        user_order::UserOrder,
+    },
 };
 
 #[server(GetFiles, "/api")]
@@ -37,7 +43,7 @@ pub async fn delete_order_item_request(
     cx: Scope,
     order: Order,
     order_item: OrderItem,
-) -> Result<u64, ServerFnError> {
+) -> Result<UserOrder, ServerFnError> {
     let mode = order_item.mode;
     match crate::pool(cx) {
         Err(e) => Err(e),
@@ -48,7 +54,10 @@ pub async fn delete_order_item_request(
                 Err(e) => Err(e),
                 Ok(_) => match OrderItem::delete(order_item.id, &pool).await {
                     Err(e) => Err(e),
-                    Ok(_) => order.revert_uploaded_status(mode, &pool).await,
+                    Ok(_) => match order.revert_uploaded_status(mode, &pool).await {
+                        Err(e) => Err(e),
+                        Ok(_) => UserOrder::get_by_order_id(order.id, &pool).await,
+                    },
                 },
             }
         }
@@ -57,6 +66,9 @@ pub async fn delete_order_item_request(
 
 #[component]
 pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
+    let auth_user = use_context::<ReadSignal<AuthUser>>(cx).expect("Auth User should be present");
+    let set_order = use_context::<WriteSignal<Option<UserOrder>>>(cx)
+        .expect("Set Order Search should be present");
     let (to_delete, set_to_delete) = create_signal::<Option<OrderItem>>(cx, None);
     let delete_order_item_action = create_server_action::<DeleteOrderItemRequest>(cx);
     let order_d = order.clone();
@@ -68,10 +80,27 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
             async move { get_order_items(cx, order, mode).await }
         },
     );
+    let file_list_title = match mode {
+        UploaderMode::Original => "Original Photos",
+        UploaderMode::Processed => "Processed Photos",
+    };
+    let allow_delete = move || {
+        let Some(User{role,..}) = auth_user.get() else {
+            return false;
+        };
+        (mode == UploaderMode::Original && role == Role::Operator)
+            || (mode == UploaderMode::Processed && role == Role::Processor)
+    };
     let delete_dialog = create_node_ref::<Dialog>(cx);
+    create_effect(cx, move |_| {
+        let Some(Ok(order)) = delete_order_item_action.value().get() else {
+            return;
+        };
+        set_order.set(Some(order));
+    });
     view! { cx,
         <div class="container">
-            <h2 class="header">"Files"</h2>
+            <h2 class="header">{file_list_title}</h2>
             <Suspense fallback=move || {
                 view! { cx, <Loading/> }
             }>
@@ -101,12 +130,19 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                                                 };
                                                 view! { cx,
                                                     <div class="w-48 p-2">
-                                                        <a href=&get_url>
-                                                            <img src=&get_url/>
-                                                        </a>
+                                                        <img src=&get_url/>
                                                     </div>
-                                                    <div class="w-48 p-2">
-                                                        <button on:click=delete_click>"Delete"</button>
+                                                    <div class="w-48 p-2 flex flex-col gap-y-5">
+                                                        {if allow_delete() {
+                                                            view! { cx,
+                                                                <button class="red" on:click=delete_click>"Delete"</button>
+                                                            }
+                                                                .into_view(cx)
+                                                        } else {
+                                                            view! { cx, <EmptyView/> }
+                                                        }} <a class="button" href=&get_url>
+                                                            "Download"
+                                                        </a>
                                                     </div>
                                                 }
                                             })
