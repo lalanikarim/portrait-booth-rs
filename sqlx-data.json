@@ -1693,6 +1693,16 @@
     },
     "query": "UPDATE `orders` SET mode_of_payment = ?, order_ref = ?, status = ? WHERE id = ? and status = ? and customer_id = ?"
   },
+  "f2bd1ff3035f029db18fe476b59e0eb01a036881f46d227be8a63b9e58d064a2": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "UPDATE `orders` SET `processor_id` = null, `status` = ? WHERE `id` = ? AND `status` = ?"
+  },
   "f4e8f730874d56070b19c08b61143f54c91f7834a35247c0087fb0e6bc298e77": {
     "describe": {
       "columns": [],
