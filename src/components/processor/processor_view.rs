@@ -38,8 +38,29 @@ pub async fn mark_ready_for_delivery_request(cx: Scope) -> Result<bool, ServerFn
         Err(e) => Err(e),
         Ok(None) => Err(ServerFnError::Args("Invalid order".to_string())),
         Ok(Some(order)) => match crate::pool(cx) {
-            Ok(pool) => order.mark_order_ready_for_delivery(&pool).await,
             Err(e) => Err(e),
+            Ok(pool) => match order.mark_order_ready_for_delivery(&pool).await {
+                Err(e) => Err(e),
+                Ok(false) => Err(ServerFnError::ServerError(
+                    "Unable to update order status".to_string(),
+                )),
+                Ok(true) => {
+                    let Ok(customer) = order.get_customer(&pool).await else {
+                        return Err(ServerFnError::ServerError("Failed to retrieve customer details".to_string()));
+                    };
+                    let Ok(order_items) = order.get_order_items(crate::models::order_item::Mode::Processed, &pool).await else {
+                        return Err(ServerFnError::ServerError("Failed to retrieve processed orders".to_string()));
+                    };
+                    let to: String = customer.email.clone();
+                    let name: String = customer.name.clone();
+                    let links: Vec<String> = order_items
+                        .into_iter()
+                        .map(|order_item| order_item.get_url)
+                        .collect();
+                    _ = crate::server::mailer::send_processed(to, name, links).await;
+                    Ok(true)
+                }
+            },
         },
     }
 }
@@ -61,7 +82,17 @@ pub fn ProcessorView(cx: Scope) -> impl IntoView {
             match order_resource.read(cx) {
                 None => view! { cx, <Loading/> },
                 Some(Err(e)) => view! { cx, <ShowError error=e.to_string()/> },
-                Some(Ok(None)) => view! { cx, <EmptyView/> },
+                Some(Ok(None)) => {
+                    view! { cx,
+                        <div class="container">
+                            <div>
+                                "No orders available at this time." <br/>
+                                "Please check again in a few minutes."
+                            </div>
+                        </div>
+                    }
+                        .into_view(cx)
+                }
                 Some(Ok(Some(order))) => {
                     view! { cx,
                         <FileList order=order.clone() mode=UploaderMode::Original/>
@@ -79,7 +110,7 @@ pub fn ProcessorView(cx: Scope) -> impl IntoView {
                                         .into_view(cx)
                                 }
                                 OrderStatus::Processed => {
-                                    view! { cx, <MarkReadyForDelivery /> }
+                                    view! { cx, <MarkReadyForDelivery/> }
                                 }
                                 _ => view! { cx, <EmptyView/> },
                             }
@@ -102,10 +133,17 @@ pub fn MarkReadyForDelivery(cx: Scope) -> impl IntoView {
             set_order.set(None);
         };
     });
+    let disable_control = move || mark_complete_action.pending().get();
+    let button_title = move || match mark_complete_action.pending().get() {
+        true => "Submitting Order",
+        false => "Complete Order",
+    };
     view! { cx,
         <div class="container">
             <h2 class="header">"All Photos Uploaded"</h2>
-            <button on:click=move|_|{mark_complete_action.dispatch(MarkReadyForDeliveryRequest{})}>"Complete Order"</button>
+            <button disabled=disable_control on:click=move |_| {
+                mark_complete_action.dispatch(MarkReadyForDeliveryRequest {})
+            }>{button_title}</button>
         </div>
     }
     .into_view(cx)
