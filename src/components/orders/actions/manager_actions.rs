@@ -70,6 +70,30 @@ pub async fn clear_stripe_pending_status(
     }
 }
 
+#[server(StatusChangeRequest, "/api")]
+pub async fn status_change_request(
+    cx: Scope,
+    order_id: u64,
+    from: OrderStatus,
+    to: OrderStatus,
+) -> Result<UserOrder, ServerFnError> {
+    match crate::server::pool_and_current_user(cx) {
+        Err(e) => Err(e),
+        Ok((pool, user)) => {
+            if user.role != Role::Manager {
+                Err(ServerFnError::ServerError(
+                    "Only Manager is allowed to make this request".to_string(),
+                ))
+            } else {
+                match crate::models::order::Order::update_status(order_id, from, to, &pool).await {
+                    Err(e) => Err(e),
+                    Ok(_) => UserOrder::get_by_order_id(order_id, &pool).await,
+                }
+            }
+        }
+    }
+}
+
 #[component]
 pub fn ManagerActions(cx: Scope, order: UserOrder) -> impl IntoView {
     let auth_user = use_context::<ReadSignal<AuthUser>>(cx).expect("AuthUser should exist");
@@ -85,6 +109,117 @@ pub fn ManagerActions(cx: Scope, order: UserOrder) -> impl IntoView {
     view! { cx,
         <ResetPendingPayment order=order.clone() set_order clear_status_action/>
         <MarkStripePaid order=order.clone() set_order mark_paid_action/>
+        <MarkUploading order=order.clone() set_order/>
+        <MarkUploaded order=order.clone() set_order/>
+    }
+    .into_view(cx)
+}
+
+#[component]
+pub fn MarkUploaded(
+    cx: Scope,
+    order: UserOrder,
+    set_order: WriteSignal<Option<UserOrder>>,
+) -> impl IntoView {
+    if order.status != OrderStatus::Uploading {
+        return view! { cx, <EmptyView/> };
+    }
+    let status_change_action = create_server_action::<StatusChangeRequest>(cx);
+    let change_status_conf = create_node_ref::<Dialog>(cx);
+    let show_conf = move |_: MouseEvent| {
+        let dialog = change_status_conf
+            .get()
+            .expect("Change Status Dialog should be present");
+        _ = dialog.show_modal();
+    };
+    let close_conf = move |_: MouseEvent| {
+        let dialog = change_status_conf
+            .get()
+            .expect("Change Status Dialog should be present");
+        dialog.close();
+    };
+    let confirm_change = move |_: MouseEvent| {
+        status_change_action.dispatch(StatusChangeRequest {
+            order_id: order.id,
+            from: order.status,
+            to: OrderStatus::Uploaded,
+        });
+    };
+    let disable_controls = move || status_change_action.pending().get();
+    create_effect(cx, move |_| {
+        if let Some(Ok(order)) = status_change_action.value().get() {
+            let dialog = change_status_conf
+                .get()
+                .expect("Status Change Dialog should exist");
+            dialog.close();
+            set_order.set(Some(order));
+        }
+    });
+    view! { cx,
+        <button on:click=show_conf>"Set Uploaded Status"</button>
+        <dialog _ref=change_status_conf>
+            <h2>"Confirm order status change"</h2>
+            <button on:click=confirm_change disabled=disable_controls>
+                "Confirm"
+            </button>
+            <button on:click=close_conf class="red" disabled=disable_controls>
+                "Cancel"
+            </button>
+        </dialog>
+    }
+    .into_view(cx)
+}
+#[component]
+pub fn MarkUploading(
+    cx: Scope,
+    order: UserOrder,
+    set_order: WriteSignal<Option<UserOrder>>,
+) -> impl IntoView {
+    if order.status != OrderStatus::InProcess && order.status != OrderStatus::Uploaded {
+        return view! { cx, <EmptyView/> };
+    }
+    let status_change_action = create_server_action::<StatusChangeRequest>(cx);
+    let change_status_conf = create_node_ref::<Dialog>(cx);
+    let show_conf = move |_: MouseEvent| {
+        let dialog = change_status_conf
+            .get()
+            .expect("Change Status Dialog should be present");
+        _ = dialog.show_modal();
+    };
+    let close_conf = move |_: MouseEvent| {
+        let dialog = change_status_conf
+            .get()
+            .expect("Change Status Dialog should be present");
+        dialog.close();
+    };
+    let confirm_change = move |_: MouseEvent| {
+        status_change_action.dispatch(StatusChangeRequest {
+            order_id: order.id,
+            from: order.status,
+            to: OrderStatus::Uploading,
+        });
+    };
+    let disable_controls = move || status_change_action.pending().get();
+    create_effect(cx, move |_| {
+        if let Some(Ok(order)) = status_change_action.value().get() {
+            let dialog = change_status_conf
+                .get()
+                .expect("Status Change Dialog should exist");
+            dialog.close();
+            set_order.set(Some(order));
+        }
+    });
+    view! { cx,
+        <button on:click=show_conf>"Set Uploading Status"</button>
+        <dialog _ref=change_status_conf>
+            <h2>"Confirm order status change"</h2>
+            <button on:click=confirm_change disabled=disable_controls>
+                "Confirm"
+            </button>
+            <button on:click=close_conf class="red" disabled=disable_controls>
+                "Cancel"
+            </button>
+        </dialog>
     }
     .into_view(cx)
 }
