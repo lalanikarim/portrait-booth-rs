@@ -1728,6 +1728,16 @@
     },
     "query": "SELECT COUNT(1) FROM `users` where email = ?"
   },
+  "f62242b547a25d1afbdbce7a77e55a67c652448fe6b9553bb2e56b8479e07d65": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "UPDATE `order_items` SET `get_url` = ? WHERE `id` = ?"
+  },
   "fa38e0338dac03dc04b83f8bdf4ca193ef607f1d636a81657c14534b6b39d024": {
     "describe": {
       "columns": [
