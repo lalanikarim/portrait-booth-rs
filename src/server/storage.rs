@@ -5,7 +5,13 @@ use s3::bucket::Bucket;
 use s3::creds::Credentials;
 use s3::region::Region;
 
+use crate::models::order_item::Mode;
 use crate::to_server_fn_error;
+
+pub fn get_prefix(order_id: u64, mode: Mode) -> String {
+    let prefix = format!("/{:0>6}/{:?}", order_id, mode).to_lowercase();
+    prefix
+}
 
 pub async fn get_bucket() -> Result<Bucket, ServerFnError> {
     let bucket_name = dotenvy::var("S3_BUCKET_NAME").expect("should be present");
@@ -60,11 +66,22 @@ pub async fn delete_file(path: String) -> Result<bool, ServerFnError> {
     }
 }
 
-pub async fn create_presigned_url(path: String) -> Result<String, ServerFnError> {
+pub async fn create_presigned_url(
+    prefix: String,
+    file_name: String,
+    mime_type: String,
+) -> Result<String, ServerFnError> {
+    let path = format!("{prefix}/{file_name}");
+    let mut get_queries = HashMap::new();
+    get_queries.insert(
+        "response-content-disposition".into(),
+        format!("attachment; filename=\"{file_name}\""),
+    );
+    get_queries.insert("content-type".into(), mime_type.clone());
     match get_bucket().await {
         Err(e) => Err(e),
         Ok(bucket) => bucket
-            .presign_get(path, 300, None)
+            .presign_get(path, 604800, Some(get_queries))
             .map_err(to_server_fn_error),
     }
 }

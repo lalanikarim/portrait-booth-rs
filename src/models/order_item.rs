@@ -35,6 +35,16 @@ pub struct OrderItem {
 
 #[cfg(feature = "ssr")]
 impl OrderItem {
+    pub async fn get_order_items_by_order_id(
+        order_id: u64,
+        mode: Mode,
+        pool: &MySqlPool,
+    ) -> Result<Vec<OrderItem>, ServerFnError> {
+        sqlx::query_as!(OrderItem,"SELECT id,order_id,mode as `mode: _`, file_name, get_url,put_url,uploaded as `uploaded: _`,uploaded_at,created_at FROM `order_items` WHERE `order_id` = ? and `mode` = ?",order_id,mode)
+            .fetch_all(pool)
+            .await
+            .map_err(to_server_fn_error)
+    }
     pub async fn set_uploaded(&self, pool: &MySqlPool) -> Result<bool, ServerFnError> {
         sqlx::query!(
             "UPDATE `order_items` SET `uploaded` = true, `uploaded_at` = ? WHERE `id` = ?",
@@ -45,6 +55,21 @@ impl OrderItem {
         .await
         .map(|result| result.rows_affected() > 0)
         .map_err(to_server_fn_error)
+    }
+    pub async fn update_get_url(
+        &self,
+        get_url: String,
+        pool: &MySqlPool,
+    ) -> Result<bool, ServerFnError> {
+        sqlx::query!(
+            "UPDATE `order_items` SET `get_url` = ? WHERE `id` = ?",
+            get_url,
+            self.id
+        )
+        .execute(pool)
+        .await
+        .map_err(to_server_fn_error)
+        .map(|result| result.rows_affected() > 0)
     }
 
     pub async fn get_by_id(id: u64, pool: &MySqlPool) -> Result<OrderItem, ServerFnError> {

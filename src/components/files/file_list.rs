@@ -32,12 +32,6 @@ pub async fn get_order_items(
     }
 }
 
-#[server(GetUrlRequest, "/api")]
-pub async fn get_url_request(cx: Scope, path: String) -> Result<String, ServerFnError> {
-    use crate::server::storage::create_presigned_url;
-    create_presigned_url(path).await
-}
-
 #[server(DeleteOrderItemRequest, "/api")]
 pub async fn delete_order_item_request(
     cx: Scope,
@@ -64,6 +58,40 @@ pub async fn delete_order_item_request(
     }
 }
 
+#[server(RefreshGetUrlsRequest, "/api")]
+pub async fn refresh_get_urls_request(
+    cx: Scope,
+    order_id: u64,
+    mode: UploaderMode,
+) -> Result<bool, ServerFnError> {
+    use super::uploader::get_mime_type;
+    use crate::server::storage::get_prefix;
+    match crate::server::pool_and_auth(cx) {
+        Err(e) => Err(e),
+        Ok((pool, _auth)) => match OrderItem::get_order_items_by_order_id(order_id, mode, &pool)
+            .await
+        {
+            Err(e) => Err(e),
+            Ok(order_items) => {
+                for order_item in order_items {
+                    let file_name = order_item.file_name.clone();
+                    let Ok(mime_type) = get_mime_type(file_name.clone()) else {
+                        return Err(ServerFnError::ServerError("Invalid file type".to_string()));
+                    };
+                    let prefix = get_prefix(order_id, mode);
+                    match crate::server::storage::create_presigned_url(prefix, file_name, mime_type)
+                        .await
+                    {
+                        Err(e) => return Err(e),
+                        Ok(get_url) => _ = order_item.update_get_url(get_url, &pool).await,
+                    };
+                }
+                Ok(true)
+            }
+        },
+    }
+}
+
 #[component]
 pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
     let auth_user = use_context::<ReadSignal<AuthUser>>(cx).expect("Auth User should be present");
@@ -71,10 +99,17 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         .expect("Set Order Search should be present");
     let (to_delete, set_to_delete) = create_signal::<Option<OrderItem>>(cx, None);
     let delete_order_item_action = create_server_action::<DeleteOrderItemRequest>(cx);
+    let refresh_get_urls_action = create_server_action::<RefreshGetUrlsRequest>(cx);
+    let order_id = order.id;
     let order_d = order.clone();
     let get_order_items = create_resource(
         cx,
-        move || delete_order_item_action.version().get(),
+        move || {
+            (
+                delete_order_item_action.version().get(),
+                refresh_get_urls_action.version().get(),
+            )
+        },
         move |_| {
             let order = order.clone();
             async move { get_order_items(cx, order, mode).await }
@@ -91,6 +126,9 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
         (mode == UploaderMode::Original && role == Role::Operator)
             || (mode == UploaderMode::Processed && role == Role::Processor)
     };
+    let refresh_urls = move |_: MouseEvent| {
+        refresh_get_urls_action.dispatch(RefreshGetUrlsRequest { order_id, mode });
+    };
     let delete_dialog = create_node_ref::<Dialog>(cx);
     create_effect(cx, move |_| {
         let Some(Ok(order)) = delete_order_item_action.value().get() else {
@@ -104,17 +142,22 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
             <Suspense fallback=move || {
                 view! { cx, <Loading/> }
             }>
+                <button on:click=refresh_urls>"Refresh Urls"</button>
                 <div class="flex flex-wrap">
                     {move || match get_order_items.read(cx) {
-                        None => view! { cx, <Loading/> }.into_view(cx),
+                        None => {
+                            view! { cx, <Loading/> }
+                                .into_view(cx)
+                        }
                         Some(order_items) => {
                             match order_items {
-                                Err(e) => view! { cx, <div>{e.to_string()}</div> }.into_view(cx),
+                                Err(e) => {
+                                    view! { cx, <div>{e.to_string()}</div> }
+                                        .into_view(cx)
+                                }
                                 Ok(order_items) => {
                                     if order_items.is_empty() {
-                                        view! { cx,
-                                            <div class="text-center w-full">"Not files uploaded"</div>
-                                        }
+                                        view! { cx, <div class="text-center w-full">"Not files uploaded"</div> }
                                             .into_view(cx)
                                     } else {
                                         order_items
@@ -135,7 +178,9 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                                                     <div class="w-48 p-2 flex flex-col gap-y-5">
                                                         {if allow_delete() {
                                                             view! { cx,
-                                                                <button class="red" on:click=delete_click>"Delete"</button>
+                                                                <button class="red" on:click=delete_click>
+                                                                    "Delete"
+                                                                </button>
                                                             }
                                                                 .into_view(cx)
                                                         } else {
@@ -160,7 +205,9 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                             move || {
                                 let order_d = order_d.clone();
                                 match to_delete.get() {
-                                    None => view! { cx, <EmptyView/> },
+                                    None => {
+                                        view! { cx, <EmptyView/> }
+                                    }
                                     Some(order_item) => {
                                         let get_url = order_item.get_url.clone();
                                         let delete_dialog = delete_dialog
@@ -186,11 +233,8 @@ pub fn FileList(cx: Scope, order: Order, mode: UploaderMode) -> impl IntoView {
                                     }
                                 }
                             }
-                        }
-                        <button on:click=move |_| {
-                            let delete_dialog = delete_dialog
-                                .get()
-                                .expect("Delete dialog should be present");
+                        } <button on:click=move |_| {
+                            let delete_dialog = delete_dialog.get().expect("Delete dialog should be present");
                             set_to_delete.set(None);
                             delete_dialog.close();
                         }>"Cancel"</button>

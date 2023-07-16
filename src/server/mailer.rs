@@ -78,9 +78,11 @@ pub async fn send_processed(
         <p>Dear {name},</p>
         
         <p>Your portraits are ready.  To download your portraits, please click on the link(s) below.</p>
+        <p><strong>The below links will expire in 5 days.</strong></p>
+
         {links}
 
-        <p>These links will expire in a few days. Please download these portraits before the links expires. 
+        <p>Please download these portraits before the links expire. 
         If you have any questions about your portraits, please send an email to {reply_to}.
         We will try and get back with you within a few days.</p>
 
