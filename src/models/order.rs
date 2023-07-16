@@ -452,6 +452,18 @@ impl Order {
         }
     }
 
+    pub async fn skip_order(&self, pool: &MySqlPool) -> Result<bool, ServerFnError> {
+        sqlx::query!("UPDATE `orders` SET `processor_id` = null, `status` = ? WHERE `id` = ? AND `status` = ?",
+            OrderStatus::Uploading,
+            self.id,
+            OrderStatus::InProcess
+        )
+            .execute(pool)
+            .await
+            .map_err(to_server_fn_error)
+            .map(|result| result.rows_affected() > 0)
+    }
+
     pub async fn add_order_item(
         &self,
         file_name: String,

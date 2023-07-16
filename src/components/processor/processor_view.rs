@@ -1,4 +1,5 @@
 use leptos::*;
+use web_sys::MouseEvent;
 
 use crate::{
     components::{
@@ -13,6 +14,18 @@ use crate::{
         user_order::UserOrder,
     },
 };
+
+#[server(SkipOrderRequest, "/api")]
+pub async fn skip_order_request(cx: Scope) -> Result<bool, ServerFnError> {
+    match fetch_order_request(cx).await {
+        Err(e) => Err(e),
+        Ok(None) => Err(ServerFnError::Args("Invalid order".to_string())),
+        Ok(Some(order)) => match crate::pool(cx) {
+            Err(e) => Err(e),
+            Ok(pool) => order.skip_order(&pool).await,
+        },
+    }
+}
 
 #[server(FetchOrderRequest, "/api")]
 pub async fn fetch_order_request(cx: Scope) -> Result<Option<Order>, ServerFnError> {
@@ -69,11 +82,20 @@ pub async fn mark_ready_for_delivery_request(cx: Scope) -> Result<bool, ServerFn
 pub fn ProcessorView(cx: Scope) -> impl IntoView {
     let (user_order, set_user_order) = create_signal::<Option<UserOrder>>(cx, None);
     _ = provide_context(cx, set_user_order);
+    let skip_order_action = create_server_action::<SkipOrderRequest>(cx);
     let order_resource = create_resource(
         cx,
         move || user_order.get(),
         move |_| async move { fetch_order_request(cx).await },
     );
+    let skip_order_click = move |_: MouseEvent| {
+        skip_order_action.dispatch(SkipOrderRequest {});
+    };
+    create_effect(cx, move |_| {
+        if let Some(Ok(true)) = skip_order_action.value().get() {
+            order_resource.refetch();
+        }
+    });
     view! { cx,
         <div class="container">
             <h2 class="header">"Process Orders"</h2>
@@ -95,6 +117,10 @@ pub fn ProcessorView(cx: Scope) -> impl IntoView {
                 }
                 Some(Ok(Some(order))) => {
                     view! { cx,
+                        <div class="container">
+                            <div class="bold">"Order: "{order.id}</div>
+                            <button class="red" on:click=skip_order_click>"Skip Order"</button>
+                        </div>
                         <FileList order=order.clone() mode=UploaderMode::Original/>
                         <FileList order=order.clone() mode=UploaderMode::Processed/>
                         {move || {
