@@ -116,25 +116,17 @@ pub fn pool(cx: leptos::Scope) -> Result<MySqlPool, leptos::ServerFnError> {
 }
 
 pub fn pool_and_auth(cx: Scope) -> Result<(MySqlPool, AuthSession), ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => match crate::auth::auth(cx) {
-            Err(e) => Err(e),
-            Ok(auth) => Ok((pool, auth)),
-        },
-    }
+    crate::pool(cx).and_then(|pool| crate::auth::auth(cx).and_then(|auth| Ok((pool, auth))))
 }
 
 pub fn pool_and_current_user(cx: Scope) -> Result<(MySqlPool, User), ServerFnError> {
-    match pool_and_auth(cx) {
-        Err(e) => Err(e),
-        Ok((pool, auth)) => match auth.current_user {
-            None => Err(ServerFnError::ServerError(
+    pool_and_auth(cx).and_then(|(pool, auth)| {
+        auth.current_user
+            .ok_or(ServerFnError::ServerError(
                 "No authenticated user".to_string(),
-            )),
-            Some(user) => Ok((pool, user)),
-        },
-    }
+            ))
+            .map(|user| (pool, user))
+    })
 }
 
 pub fn get_totp_duration() -> u64 {
