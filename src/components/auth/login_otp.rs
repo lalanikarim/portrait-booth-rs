@@ -5,31 +5,27 @@ use leptos_router::*;
 #[server(LoginOtpRequest, "/api")]
 pub async fn login_otp_request(cx: Scope, email: String) -> Result<(), ServerFnError> {
     use totp_rs::*;
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => {
-            let result = sqlx::query_scalar!("SELECT otp_secret FROM users WHERE email = ?", email)
-                .fetch_one(&pool)
-                .await;
-            log!("Received Email: {email:?}");
-            if let Ok(Some(otp_secret)) = result {
-                let totp_dur = crate::get_totp_duration();
-                let totp = TOTP::new(
-                    Algorithm::SHA256,
-                    6,
-                    1,
-                    totp_dur,
-                    otp_secret.as_bytes().into(),
-                )
-                .expect("Unable to Initialize TOTP");
-                let otp = totp.generate_current().expect("Unable to generate OTP");
-                log!("OTP Code: {:#?}, ttl: {:#?}s", otp, totp.ttl());
-                let email_response = server::mailer::send_otp(email, otp.clone()).await;
-                log!("Email: {:#?}", email_response);
-            }
-            Ok(())
-        }
+    let pool = crate::pool(cx)?;
+    let result = sqlx::query_scalar!("SELECT otp_secret FROM users WHERE email = ?", email)
+        .fetch_one(&pool)
+        .await;
+    log!("Received Email: {email:?}");
+    if let Ok(Some(otp_secret)) = result {
+        let totp_dur = crate::get_totp_duration();
+        let totp = TOTP::new(
+            Algorithm::SHA256,
+            6,
+            1,
+            totp_dur,
+            otp_secret.as_bytes().into(),
+        )
+        .expect("Unable to Initialize TOTP");
+        let otp = totp.generate_current().expect("Unable to generate OTP");
+        log!("OTP Code: {:#?}, ttl: {:#?}s", otp, totp.ttl());
+        let email_response = server::mailer::send_otp(email, otp.clone()).await;
+        log!("Email: {:#?}", email_response);
     }
+    Ok(())
 }
 #[server(LoginOtpVerifyRequest, "/api")]
 pub async fn login_otp_verify_request(
@@ -39,30 +35,25 @@ pub async fn login_otp_verify_request(
 ) -> Result<bool, ServerFnError> {
     use totp_rs::*;
     log!("Received Email: {email:?}");
-    match crate::server::pool_and_auth(cx) {
-        Err(e) => Err(e),
-        Ok((pool, auth)) => {
-            let result = sqlx::query_as::<_, crate::models::user::User>(
-                "SELECT * FROM users WHERE email = ?",
-            )
+    let (pool, auth) = crate::server::pool_and_auth(cx)?;
+    let result =
+        sqlx::query_as::<_, crate::models::user::User>("SELECT * FROM users WHERE email = ?")
             .bind(email)
             .fetch_one(&pool)
             .await;
-            if let Ok(user) = result {
-                let secret = user.clone().otp_secret.unwrap_or_default();
-                let secret = secret.as_bytes();
-                let totp_dur = crate::get_totp_duration();
-                let totp = TOTP::new(Algorithm::SHA256, 6, 1, totp_dur, secret.into())
-                    .expect("Unable to Initialize TOTP");
-                if totp.check_current(otp.as_str()).ok().unwrap_or_default() {
-                    auth.logout_user();
-                    auth.login_user(user.id);
-                    return Ok(true);
-                }
-            }
-            Ok(false)
+    if let Ok(user) = result {
+        let secret = user.clone().otp_secret.unwrap_or_default();
+        let secret = secret.as_bytes();
+        let totp_dur = crate::get_totp_duration();
+        let totp = TOTP::new(Algorithm::SHA256, 6, 1, totp_dur, secret.into())
+            .expect("Unable to Initialize TOTP");
+        if totp.check_current(otp.as_str()).ok().unwrap_or_default() {
+            auth.logout_user();
+            auth.login_user(user.id);
+            return Ok(true);
         }
     }
+    Ok(false)
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -81,7 +72,6 @@ pub fn LoginOtp(
     let (state, set_state) = create_signal(
         cx,
         email
-            
             .map(LoginOtpState::GetOtp)
             .unwrap_or(LoginOtpState::GetEmail),
     );

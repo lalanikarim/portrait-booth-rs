@@ -18,10 +18,8 @@ pub async fn get_pre_signed_put_url(cx: Scope, path: String) -> Result<String, S
 
 #[server(GetUserOrder, "/api")]
 pub async fn get_user_order(cx: Scope, id: u64) -> Result<UserOrder, ServerFnError> {
-    match crate::pool(cx) {
-        Ok(pool) => UserOrder::get_by_order_id(id, &pool).await,
-        Err(e) => Err(e),
-    }
+    let pool = crate::pool(cx)?;
+    UserOrder::get_by_order_id(id, &pool).await
 }
 
 #[server(AddOrderItemRequest, "/api")]
@@ -42,31 +40,21 @@ pub async fn add_order_item_request(
         uuid::Uuid::new_v4().as_hyphenated().to_string(),
         ext
     );
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => match get_remaining_uploads(cx, order.clone(), mode).await {
-            Err(e) => Err(to_server_fn_error(e)),
-            Ok(0) => Err(ServerFnError::ServerError(
-                "No more uploads allowed".to_string(),
-            )),
-            Ok(_) => {
-                match crate::server::storage::create_presigned_url_pair(
-                    prefix,
-                    file_name.clone(),
-                    mime_type,
-                )
-                .await
-                {
-                    Err(e) => Err(e),
-                    Ok((get_url, put_url)) => {
-                        order
-                            .add_order_item(file_name.clone(), mode, get_url, put_url, &pool)
-                            .await
-                    }
-                }
-            }
-        },
+    let pool = crate::pool(cx)?;
+    let response = get_remaining_uploads(cx, order.clone(), mode)
+        .await
+        .map_err(to_server_fn_error)?;
+    if response < 1 {
+        return Err(ServerFnError::ServerError(
+            "No more uploads allowed".to_string(),
+        ));
     }
+    let (get_url, put_url) =
+        crate::server::storage::create_presigned_url_pair(prefix, file_name.clone(), mime_type)
+            .await?;
+    order
+        .add_order_item(file_name.clone(), mode, get_url, put_url, &pool)
+        .await
 }
 
 #[server(GetRemainingUploads, "/api")]
@@ -75,10 +63,8 @@ pub async fn get_remaining_uploads(
     order: Order,
     mode: UploaderMode,
 ) -> Result<u64, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => order.remaining_order_items(mode, &pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    order.remaining_order_items(mode, &pool).await
 }
 
 #[server(UpdateOrderUploadStatus, "/api")]
@@ -87,10 +73,8 @@ pub async fn update_order_upload_status(
     order: Order,
     mode: UploaderMode,
 ) -> Result<u64, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => order.set_uploaded_for_zero_remaining(mode, &pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    order.set_uploaded_for_zero_remaining(mode, &pool).await
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]

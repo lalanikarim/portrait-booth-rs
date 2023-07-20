@@ -27,43 +27,39 @@ pub async fn get_bucket() -> Result<Bucket, ServerFnError> {
 }
 
 pub async fn get_files(prefix: String) -> Result<Vec<String>, ServerFnError> {
-    match get_bucket().await {
-        Err(e) => Err(e),
-        Ok(bucket) => bucket
-            .list(prefix, Some("/".into()))
-            .await
-            .map_err(|e| ServerFnError::ServerError(e.to_string()))
-            .map(|r| {
-                r.iter()
-                    .flat_map(|i| {
-                        let mut common_prefixes: Vec<String> = i
-                            .common_prefixes
-                            .clone()
-                            .map(|p| p.iter().map(|p| p.prefix.clone()).collect())
-                            .unwrap_or(Vec::new());
-                        let mut content: Vec<String> =
-                            i.contents.iter().map(|c| c.key.clone()).collect();
-                        common_prefixes.append(&mut content);
-                        common_prefixes
-                    })
-                    .collect()
-            }),
-    }
+    let bucket = get_bucket().await?;
+    bucket
+        .list(prefix, Some("/".into()))
+        .await
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        .map(|r| {
+            r.iter()
+                .flat_map(|i| {
+                    let mut common_prefixes: Vec<String> = i
+                        .common_prefixes
+                        .clone()
+                        .map(|p| p.iter().map(|p| p.prefix.clone()).collect())
+                        .unwrap_or(Vec::new());
+                    let mut content: Vec<String> =
+                        i.contents.iter().map(|c| c.key.clone()).collect();
+                    common_prefixes.append(&mut content);
+                    common_prefixes
+                })
+                .collect()
+        })
 }
 
 pub async fn delete_file(path: String) -> Result<bool, ServerFnError> {
     leptos::log!("Deleting {path:?}");
-    match get_bucket().await {
-        Err(e) => Err(e),
-        Ok(bucket) => bucket
-            .delete_object(path)
-            .await
-            .map_err(to_server_fn_error)
-            .map(|response| {
-                leptos::log!("{:#?}", response);
-                true
-            }),
-    }
+    let bucket = get_bucket().await?;
+    bucket
+        .delete_object(path)
+        .await
+        .map_err(to_server_fn_error)
+        .map(|response| {
+            leptos::log!("{:#?}", response);
+            true
+        })
 }
 
 pub async fn create_presigned_url(
@@ -78,20 +74,16 @@ pub async fn create_presigned_url(
         format!("attachment; filename=\"{file_name}\""),
     );
     get_queries.insert("content-type".into(), mime_type.clone());
-    match get_bucket().await {
-        Err(e) => Err(e),
-        Ok(bucket) => bucket
-            .presign_get(path, 604800, Some(get_queries))
-            .map_err(to_server_fn_error),
-    }
+    let bucket = get_bucket().await?;
+    bucket
+        .presign_get(path, 604800, Some(get_queries))
+        .map_err(to_server_fn_error)
 }
 pub async fn create_presigned_put_url(path: String) -> Result<String, ServerFnError> {
-    match get_bucket().await {
-        Err(e) => Err(e),
-        Ok(bucket) => bucket
-            .presign_put(path, 300, None)
-            .map_err(to_server_fn_error),
-    }
+    let bucket = get_bucket().await?;
+    bucket
+        .presign_put(path, 300, None)
+        .map_err(to_server_fn_error)
 }
 
 pub async fn create_presigned_url_pair(
@@ -107,14 +99,13 @@ pub async fn create_presigned_url_pair(
         format!("attachment; filename=\"{file_name}\""),
     );
     get_queries.insert("content-type".into(), mime_type.clone());
-    match get_bucket().await {
-        Err(e) => Err(e),
-        Ok(bucket) => match bucket.presign_put(path.clone(), 3600, None) {
-            Err(e) => Err(to_server_fn_error(e)),
-            Ok(put_url) => match bucket.presign_get(path, 604800, Some(get_queries)) {
-                Err(e) => Err(to_server_fn_error(e)),
-                Ok(get_url) => Ok((get_url, put_url)),
-            },
-        },
-    }
+    let bucket = get_bucket().await?;
+    bucket
+        .presign_put(path.clone(), 3600, None)
+        .and_then(|put_url| {
+            bucket
+                .presign_get(path, 604800, Some(get_queries))
+                .map(|get_url| (get_url, put_url))
+        })
+        .map_err(to_server_fn_error)
 }

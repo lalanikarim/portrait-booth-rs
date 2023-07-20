@@ -12,24 +12,20 @@ use crate::{
 
 #[server(MarkPaidRequest, "/api")]
 pub async fn mark_paid_request(cx: Scope, order_id: u64) -> Result<UserOrder, ServerFnError> {
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((pool, user)) => {
-            if user.role != Role::Cashier && user.role != Role::Manager {
-                return Err(ServerFnError::ServerError(
-                    "Only Manager or Cashier can collect payment".to_string(),
-                ));
-            }
-            match crate::models::order::Order::collect_payment_cash(order_id, user.id, &pool).await
-            {
-                Err(e) => Err(e),
-                Ok(false) => Err(ServerFnError::ServerError(
-                    "Unable to save changes to order".to_string(),
-                )),
-                Ok(true) => UserOrder::get_by_order_id(order_id, &pool).await,
-            }
-        }
+    let (pool, user) = crate::server::pool_and_current_user(cx)?;
+    if user.role != Role::Cashier && user.role != Role::Manager {
+        return Err(ServerFnError::ServerError(
+            "Only Manager or Cashier can collect payment".to_string(),
+        ));
     }
+    let success =
+        crate::models::order::Order::collect_payment_cash(order_id, user.id, &pool).await?;
+    if !success {
+        return Err(ServerFnError::ServerError(
+            "Unable to save changes to order".to_string(),
+        ));
+    }
+    UserOrder::get_by_order_id(order_id, &pool).await
 }
 
 #[component]

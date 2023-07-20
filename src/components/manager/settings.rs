@@ -13,10 +13,8 @@ cfg_if::cfg_if! {
 
 #[server(ToggleAllowOrderCreation, "/api")]
 pub async fn toggle_allow_order_creation(cx: Scope, toggle: bool) -> Result<bool, ServerFnError> {
-    match crate::pool(cx) {
-        Ok(pool) => Setting::toggle_allow_order_creation(toggle, &pool).await,
-        Err(e) => Err(e),
-    }
+    let pool = crate::pool(cx)?;
+    Setting::toggle_allow_order_creation(toggle, &pool).await
 }
 
 #[component]

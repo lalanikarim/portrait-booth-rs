@@ -29,19 +29,14 @@ fn email_builder() -> MessageBuilder {
 
 #[server(SendOtpEmail, "/api")]
 pub async fn send_otp(to: String, otp: String) -> Result<bool, ServerFnError> {
-    let mailer = match get_mailer() {
-        Ok(mailer) => mailer,
-        Err(e) => return Err(e),
-    };
+    let mailer = get_mailer()?;
 
-    let email = match email_builder()
+    let email = email_builder()
         .to(to.parse().unwrap())
         .subject("Login Code for Portrait Booth")
         .header(ContentType::TEXT_PLAIN)
-        .body(format!("Your login code is: {}.\nThis code will expire soon after which you will need to request a new login code.",otp)) {
-            Err(e) => return Err(to_server_fn_error(e)),
-            Ok(email) => email
-        };
+        .body(format!("Your login code is: {}.\nThis code will expire soon after which you will need to request a new login code.",otp))
+        .map_err(to_server_fn_error)? ;
 
     mailer
         .send(email)
@@ -59,10 +54,7 @@ pub async fn send_processed(
     let reply_to =
         dotenvy::var("SMTP_REPLY_TO_EMAIL").expect("SMTP_REPLY_TO_EMAIL should be present");
     let from_name = dotenvy::var("EMAIL_FROM_NAME").expect("EMAIL_FROM_NAME should be present");
-    let mailer = match get_mailer() {
-        Ok(mailer) => mailer,
-        Err(e) => return Err(e),
-    };
+    let mailer = get_mailer()?;
 
     let links = links
         .into_iter()
@@ -70,7 +62,7 @@ pub async fn send_processed(
         .map(|(i, link)| format!(r#"<p><a href="{link}">Portrait {}</a></p>"#, i + 1))
         .collect::<String>();
 
-    let email = match email_builder()
+    let email = email_builder()
         .to(to.parse().unwrap())
         .subject("Your portraits are ready")
         .header(ContentType::TEXT_HTML)
@@ -91,10 +83,8 @@ pub async fn send_processed(
         <p>Regards,</p>
 
         <p>{from_name}</p>
-        "#)) {
-            Err(e) => return Err(to_server_fn_error(e)),
-            Ok(email) => email
-        };
+        "#))
+        .map_err(to_server_fn_error)? ;
 
     mailer
         .send(email)

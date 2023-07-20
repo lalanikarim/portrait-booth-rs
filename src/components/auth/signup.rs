@@ -60,29 +60,21 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
     use crate::models::user::Role;
     use totp_rs::*;
 
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => {
-            match sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where email = ?", form.email)
-                .fetch_one(&pool)
-                .await
-            {
-                Ok(1) => {
-                    return Ok(SignupResponse::EmailAlreadyUsed);
-                }
-                Err(e) => {
-                    return Err(ServerFnError::ServerError(e.to_string()));
-                }
-                _ => (),
-            };
+    let pool = crate::pool(cx)?;
+    let response = sqlx::query_scalar!("SELECT COUNT(1) FROM `users` where email = ?", form.email)
+        .fetch_one(&pool)
+        .await
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+    if response == 1 {
+        return Ok(SignupResponse::EmailAlreadyUsed);
+    };
 
-            let Secret::Encoded(otp_secret) = Secret::generate_secret().to_encoded() else {
+    let Secret::Encoded(otp_secret) = Secret::generate_secret().to_encoded() else {
                 return Err(ServerFnError::ServerError("Unable to generate OTP Secret".into()));
             };
-            let password_hash =
-                bcrypt::hash(form.password.unwrap_or(otp_secret.clone()), 12).unwrap();
+    let password_hash = bcrypt::hash(form.password.unwrap_or(otp_secret.clone()), 12).unwrap();
 
-            sqlx::query!(
+    sqlx::query!(
                 "INSERT INTO users (name, email, phone, password_hash,otp_secret, role) values (?, ?, ?, ?,?, ?)",
                 form.fullname,
                 form.email,
@@ -95,8 +87,6 @@ pub async fn signup_request(cx: Scope, form: SignupForm) -> Result<SignupRespons
             .await
             .map(|_| SignupResponse::Success)
             .map_err(|e| ServerFnError::ServerError(e.to_string()))
-        }
-    }
 }
 #[component]
 pub fn signup(

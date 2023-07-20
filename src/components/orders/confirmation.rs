@@ -16,32 +16,22 @@ pub async fn store_stripe_confirmation(
         order_ref,
         payment_ref,
     } = params;
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => {
-            match crate::models::order::Order::get_by_order_confirmation(order_ref.clone(), &pool)
-                .await
-            {
-                Err(e) => Err(e),
-                Ok(None) => Err(ServerFnError::Args("Invalid Order Reference".to_string())),
-                Ok(Some(order)) => {
-                    match crate::models::order::Order::update_order_confirmation(
-                        order_ref.clone(),
-                        payment_ref,
-                        &pool,
-                    )
-                    .await
-                    {
-                        Err(e) => Err(e),
-                        Ok(false) => Err(ServerFnError::ServerError(
-                            "Unable to save order confirmation".to_string(),
-                        )),
-                        Ok(true) => UserOrder::get_by_order_id(order.id, &pool).await,
-                    }
-                }
-            }
-        }
+    let pool = crate::pool(cx)?;
+    let order = crate::models::order::Order::get_by_order_confirmation(order_ref.clone(), &pool)
+        .await?
+        .ok_or(ServerFnError::Args("Invalid Order Reference".into()))?;
+    let response = crate::models::order::Order::update_order_confirmation(
+        order_ref.clone(),
+        payment_ref,
+        &pool,
+    )
+    .await?;
+    if !response {
+        return Err(ServerFnError::ServerError(
+            "Unable to save order confirmation".to_string(),
+        ));
     }
+    UserOrder::get_by_order_id(order.id, &pool).await
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

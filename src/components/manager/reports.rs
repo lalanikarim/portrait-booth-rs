@@ -15,18 +15,14 @@ cfg_if::cfg_if! {
 pub async fn get_order_count_by_status_report(
     cx: Scope,
 ) -> Result<Vec<OrderCountByStatus>, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => Report::get_order_count_by_status(&pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    Report::get_order_count_by_status(&pool).await
 }
 
 #[server(GetCollectionReport, "/api")]
 pub async fn get_collection_report(cx: Scope) -> Result<Vec<PaymentCollection>, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => Report::get_collection_by_staff(&pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    Report::get_collection_by_staff(&pool).await
 }
 
 #[component]

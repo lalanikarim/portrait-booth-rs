@@ -18,10 +18,8 @@ use crate::{
 
 #[server(GetOrderRequest, "/api")]
 pub async fn get_order_request(cx: Scope, id: u64) -> Result<Option<Order>, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => Order::get_by_id(id, &pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    Order::get_by_id(id, &pool).await
 }
 
 #[server(OrderSearchRequest, "/api")]
@@ -29,10 +27,8 @@ pub async fn order_search_request(
     cx: Scope,
     form: crate::models::user_order::OrderSearchForm,
 ) -> Result<Vec<UserOrder>, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => UserOrder::search_orders(form, &pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    UserOrder::search_orders(form, &pool).await
 }
 #[component]
 pub fn SearchView(cx: Scope) -> impl IntoView {

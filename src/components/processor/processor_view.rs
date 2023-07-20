@@ -17,64 +17,56 @@ use crate::{
 
 #[server(SkipOrderRequest, "/api")]
 pub async fn skip_order_request(cx: Scope) -> Result<bool, ServerFnError> {
-    match fetch_order_request(cx).await {
-        Err(e) => Err(e),
-        Ok(None) => Err(ServerFnError::Args("Invalid order".to_string())),
-        Ok(Some(order)) => match crate::pool(cx) {
-            Err(e) => Err(e),
-            Ok(pool) => order.skip_order(&pool).await,
-        },
-    }
+    let pool = crate::pool(cx)?;
+    let order = fetch_order_request(cx)
+        .await?
+        .ok_or(ServerFnError::Args("Invalid order".to_string()))?;
+    order.skip_order(&pool).await
 }
 
 #[server(FetchOrderRequest, "/api")]
 pub async fn fetch_order_request(cx: Scope) -> Result<Option<Order>, ServerFnError> {
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((
-            pool,
-            crate::models::user::User {
-                id: processor_id,
-                role: crate::models::user::Role::Processor,
-                ..
-            },
-        )) => Order::fetch_order_for_processor(processor_id, &pool).await,
-        Ok(_) => Err(ServerFnError::ServerError(
+    let (
+        pool,
+        crate::models::user::User {
+            id: processor_id,
+            role,
+            ..
+        },
+    ) = crate::server::pool_and_current_user(cx)?;
+    if role != crate::models::user::Role::Processor {
+        return Err(ServerFnError::ServerError(
             "Only processors are allowed to make this request".to_string(),
-        )),
+        ));
     }
+    Order::fetch_order_for_processor(processor_id, &pool).await
 }
 
 #[server(MarkReadyForDeliveryRequest, "/api")]
 pub async fn mark_ready_for_delivery_request(cx: Scope) -> Result<bool, ServerFnError> {
-    match fetch_order_request(cx).await {
-        Err(e) => Err(e),
-        Ok(None) => Err(ServerFnError::Args("Invalid order".to_string())),
-        Ok(Some(order)) => match crate::pool(cx) {
-            Err(e) => Err(e),
-            Ok(pool) => match order.mark_order_ready_for_delivery(&pool).await {
-                Err(e) => Err(e),
-                Ok(false) => Err(ServerFnError::ServerError(
-                    "Unable to update order status".to_string(),
-                )),
-                Ok(true) => {
-                    let Ok(customer) = order.get_customer(&pool).await else {
-                        return Err(ServerFnError::ServerError("Failed to retrieve customer details".to_string()));
-                    };
-                    let Ok(order_items) = order.get_order_items(crate::models::order_item::Mode::Processed, &pool).await else {
-                        return Err(ServerFnError::ServerError("Failed to retrieve processed orders".to_string()));
-                    };
-                    let to: String = customer.email.clone();
-                    let name: String = customer.name.clone();
-                    let links: Vec<String> = order_items
-                        .into_iter()
-                        .map(|order_item| order_item.get_url)
-                        .collect();
-                    _ = crate::server::mailer::send_processed(to, name, links).await;
-                    Ok(true)
-                }
-            },
-        },
+    let pool = crate::pool(cx)?;
+    let order = fetch_order_request(cx)
+        .await?
+        .ok_or(ServerFnError::Args("Invalid order".into()))?;
+    let response = order.mark_order_ready_for_delivery(&pool).await?;
+    match response {
+        false => Err(ServerFnError::ServerError(
+            "Unable to update order status".to_string(),
+        )),
+        true => {
+            let customer = order.get_customer(&pool).await?;
+            let order_items = order
+                .get_order_items(crate::models::order_item::Mode::Processed, &pool)
+                .await?;
+            let to: String = customer.email.clone();
+            let name: String = customer.name.clone();
+            let links: Vec<String> = order_items
+                .into_iter()
+                .map(|order_item| order_item.get_url)
+                .collect();
+            _ = crate::server::mailer::send_processed(to, name, links).await;
+            Ok(true)
+        }
     }
 }
 

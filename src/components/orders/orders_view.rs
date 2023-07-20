@@ -16,12 +16,10 @@ cfg_if::cfg_if! {
 
 #[server(GetAllowOrderCreationSetting, "/api")]
 pub async fn get_allow_order_creation_setting(cx: Scope) -> Result<bool, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => Setting::get_allow_order_creation(&pool)
-            .await
-            .map(|setting| setting.is_true()),
-    }
+    let pool = crate::pool(cx)?;
+    Setting::get_allow_order_creation(&pool)
+        .await
+        .map(|setting| setting.is_true())
 }
 
 #[component]

@@ -25,30 +25,26 @@ async fn login_request(
     password: String,
 ) -> Result<LoginResponse, ServerFnError> {
     use crate::models::user::UserStatus;
-    match crate::server::pool_and_auth(cx) {
-        Err(e) => Err(e),
-        Ok((pool, auth)) => {
-            let Ok(user) = User::get_by_username(username, &pool).await else {
+    let (pool, auth) = crate::server::pool_and_auth(cx)?;
+    let Ok(user) = User::get_by_username(username, &pool).await else {
                 return Ok(LoginResponse::InvalidCredentials);
             };
-            let Ok(true) = bcrypt::verify(
+    let Ok(true) = bcrypt::verify(
                 password,
                 &user.clone().password_hash.unwrap_or("".to_string()),
             ) else {
                 return Ok(LoginResponse::InvalidCredentials);
             };
 
-            let response = match user.status {
-                UserStatus::Disabled => LoginResponse::LockedOut,
-                UserStatus::NotActivatedYet => LoginResponse::NotActivated,
-                UserStatus::Active => {
-                    auth.login_user(user.id);
-                    LoginResponse::LoggedIn(user)
-                }
-            };
-            Ok(response)
+    let response = match user.status {
+        UserStatus::Disabled => LoginResponse::LockedOut,
+        UserStatus::NotActivatedYet => LoginResponse::NotActivated,
+        UserStatus::Active => {
+            auth.login_user(user.id);
+            LoginResponse::LoggedIn(user)
         }
-    }
+    };
+    Ok(response)
 }
 
 #[component]

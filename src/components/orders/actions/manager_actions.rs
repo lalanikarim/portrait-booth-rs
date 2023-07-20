@@ -15,30 +15,25 @@ pub async fn mark_stripe_paid_request(
     cx: Scope,
     order_id: u64,
 ) -> Result<UserOrder, ServerFnError> {
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((pool, user)) => {
-            if user.role != Role::Manager {
-                return Err(ServerFnError::ServerError(
-                    "Only Manager can mark pending stripe payment to paid".to_string(),
-                ));
-            }
-            let manager_override = format!("Manager override by {},{}", user.name, user.email);
-            match crate::models::order::Order::get_by_id(order_id, &pool).await {
-                Err(e) => Err(e),
-                Ok(None) => Err(ServerFnError::Args("Invalid Order Id".to_string())),
-                Ok(Some(order)) => match order
-                    .mark_stripe_payment_complete(manager_override, &pool)
-                    .await
-                {
-                    Err(e) => Err(e),
-                    Ok(false) => Err(ServerFnError::ServerError(
-                        "Unable to save changes to order".to_string(),
-                    )),
-                    Ok(true) => UserOrder::get_by_order_id(order_id, &pool).await,
-                },
-            }
-        }
+    let (pool, user) = crate::server::pool_and_current_user(cx)?;
+    if user.role != Role::Manager {
+        return Err(ServerFnError::ServerError(
+            "Only Manager can mark pending stripe payment to paid".to_string(),
+        ));
+    }
+    let manager_override = format!("Manager override by {},{}", user.name, user.email);
+    let order = crate::models::order::Order::get_by_id(order_id, &pool)
+        .await?
+        .ok_or(ServerFnError::Args("Invalid Order Id".into()))?;
+    let response = order
+        .mark_stripe_payment_complete(manager_override, &pool)
+        .await?;
+    if !response {
+        Err(ServerFnError::ServerError(
+            "Unable to save changes to order".to_string(),
+        ))
+    } else {
+        UserOrder::get_by_order_id(order_id, &pool).await
     }
 }
 
@@ -47,27 +42,20 @@ pub async fn clear_stripe_pending_status(
     cx: Scope,
     order_id: u64,
 ) -> Result<UserOrder, ServerFnError> {
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((pool, user)) => {
-            if user.role != Role::Manager {
-                return Err(ServerFnError::ServerError(
-                    "Only Manager can reset pending payment status".to_string(),
-                ));
-            }
-            match crate::models::order::Order::get_by_id(order_id, &pool).await {
-                Err(e) => Err(e),
-                Ok(None) => Err(ServerFnError::Args("Invalid Order Id provided".to_string())),
-                Ok(Some(order)) => match order.reset_payment_status(&pool).await {
-                    Err(e) => Err(e),
-                    Ok(None) => Err(ServerFnError::ServerError(
-                        "Unable to retrieve result".to_string(),
-                    )),
-                    Ok(Some(order)) => UserOrder::get_by_order_id(order.id, &pool).await,
-                },
-            }
-        }
+    let (pool, user) = crate::server::pool_and_current_user(cx)?;
+    if user.role != Role::Manager {
+        return Err(ServerFnError::ServerError(
+            "Only Manager can reset pending payment status".to_string(),
+        ));
     }
+    let order = crate::models::order::Order::get_by_id(order_id, &pool)
+        .await?
+        .ok_or(ServerFnError::Args("Invalid Order Id provided".into()))?;
+    order
+        .reset_payment_status(&pool)
+        .await?
+        .ok_or(ServerFnError::Args("Unable to retrieve result".into()))?;
+    UserOrder::get_by_order_id(order.id, &pool).await
 }
 
 #[server(StatusChangeRequest, "/api")]
@@ -77,21 +65,14 @@ pub async fn status_change_request(
     from: OrderStatus,
     to: OrderStatus,
 ) -> Result<UserOrder, ServerFnError> {
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((pool, user)) => {
-            if user.role != Role::Manager {
-                Err(ServerFnError::ServerError(
-                    "Only Manager is allowed to make this request".to_string(),
-                ))
-            } else {
-                match crate::models::order::Order::update_status(order_id, from, to, &pool).await {
-                    Err(e) => Err(e),
-                    Ok(_) => UserOrder::get_by_order_id(order_id, &pool).await,
-                }
-            }
-        }
+    let (pool, user) = crate::server::pool_and_current_user(cx)?;
+    if user.role != Role::Manager {
+        return Err(ServerFnError::ServerError(
+            "Only Manager is allowed to make this request".to_string(),
+        ));
     }
+    crate::models::order::Order::update_status(order_id, from, to, &pool).await?;
+    UserOrder::get_by_order_id(order_id, &pool).await
 }
 
 #[component]

@@ -8,26 +8,20 @@ use crate::{
 
 #[server(GetAllStaff, "/api")]
 pub async fn get_all_staff(cx: Scope) -> Result<Vec<User>, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => User::get_all_staff(&pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    User::get_all_staff(&pool).await
 }
 
 #[server(GetUserByEmail, "/api")]
 pub async fn get_user_by_email(cx: Scope, email: String) -> Result<Option<User>, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => User::get_by_username(email, &pool).await.map(Some),
-    }
+    let pool = crate::pool(cx)?;
+    User::get_by_username(email, &pool).await.map(Some)
 }
 
 #[server(ChangeUserRole, "/api")]
 pub async fn change_user_role(cx: Scope, id: u64, role: Role) -> Result<bool, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => User::change_role(id, role, &pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    User::change_role(id, role, &pool).await
 }
 
 #[component]

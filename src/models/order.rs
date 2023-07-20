@@ -133,10 +133,12 @@ impl Order {
         &self,
         pool: &MySqlPool,
     ) -> Result<Option<Order>, ServerFnError> {
-        match sqlx::query!("UPDATE `orders` SET `status` = 0, `mode_of_payment` = 0 WHERE `id` = ? AND `status` = 1", self.id).execute(pool).await {
-            Err(e) => Err(to_server_fn_error(e)),
-            Ok(_) => Order::get_by_id(self.id, &pool).await
-        }
+        _ = sqlx::query!("UPDATE `orders` SET `status` = 0, `mode_of_payment` = 0 WHERE `id` = ? AND `status` = 1",
+            self.id)
+            .execute(pool)
+            .await
+            .map_err(to_server_fn_error)?;
+        Order::get_by_id(self.id, &pool).await
     }
 
     pub async fn create(
@@ -149,7 +151,7 @@ impl Order {
             unit_price,
         } = Self::get_unit_price().expect("PHOTO_UNIT_PRICE env variable should be present");
         let order_total = no_of_photos * unit_price + base_price;
-        let order_create = sqlx::query!("INSERT INTO `orders` (customer_id,no_of_photos,order_total,mode_of_payment,status,created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        let order_id = sqlx::query!("INSERT INTO `orders` (customer_id,no_of_photos,order_total,mode_of_payment,status,created_at) VALUES (?, ?, ?, ?, ?, ?)",
                     customer_id,
                     no_of_photos,
                     order_total,
@@ -158,13 +160,11 @@ impl Order {
                     Local::now())
                     .execute(pool)
                     .await
-                    .map(|result| result.last_insert_id());
-        match order_create {
-            Err(e) => Err(to_server_fn_error(e)),
-            Ok(order_id) => Order::get_by_id(order_id, pool)
-                .await
-                .map_err(to_server_fn_error),
-        }
+                    .map(|result| result.last_insert_id())
+                    .map_err(to_server_fn_error)?;
+        Order::get_by_id(order_id, pool)
+            .await
+            .map_err(to_server_fn_error)
     }
 
     pub async fn get_by_id(id: u64, pool: &MySqlPool) -> Result<Option<Order>, ServerFnError> {
@@ -472,12 +472,20 @@ impl Order {
         put_url: String,
         pool: &MySqlPool,
     ) -> Result<OrderItem, ServerFnError> {
-        match sqlx::query!("SELECT COUNT(1) as count FROM `order_items` WHERE order_id = ? AND mode = ?",self.id,mode).fetch_one(pool).await {
-            Err(e) => Err(to_server_fn_error(e)),
-            Ok(result) => match self.no_of_photos > result.count as u64 {
-                false => Err(ServerFnError::ServerError("No more uploads allowed".to_string())),
-                true => {
-                    match sqlx::query!(
+        let result = sqlx::query!(
+            "SELECT COUNT(1) as count FROM `order_items` WHERE order_id = ? AND mode = ?",
+            self.id,
+            mode
+        )
+        .fetch_one(pool)
+        .await
+        .map_err(to_server_fn_error)?;
+        match self.no_of_photos > result.count as u64 {
+            false => Err(ServerFnError::ServerError(
+                "No more uploads allowed".to_string(),
+            )),
+            true => {
+                let result = sqlx::query!(
                         "INSERT into `order_items` (order_id,file_name,mode,get_url,put_url,created_at) values (?, ?, ?, ?, ?, ? )",
                         self.id,
                         file_name,
@@ -487,11 +495,9 @@ impl Order {
                         Local::now()
                     )
                     .execute(pool)
-                    .await {
-                            Err(e) => Err(to_server_fn_error(e)),
-                            Ok(result) => OrderItem::get_by_id(result.last_insert_id(),pool).await
-                        }
-                }
+                    .await
+                    .map_err(to_server_fn_error)?;
+                OrderItem::get_by_id(result.last_insert_id(), pool).await
             }
         }
     }
@@ -565,20 +571,25 @@ impl Order {
         processor_id: u64,
         pool: &MySqlPool,
     ) -> Result<Option<Order>, ServerFnError> {
-        match Order::fetch_current_order_for_processor(processor_id, pool).await {
-            Err(e) => Err(e),
-            Ok(None) => {
-                match sqlx::query!("UPDATE `orders` SET `processor_id` = ?, `status` = ? WHERE `id` =(SELECT `id` FROM (SELECT `id` FROM `orders` WHERE `processor_id` is null AND `status` = ? LIMIT 1) as x)",processor_id,OrderStatus::InProcess,OrderStatus::Uploaded).execute(pool).await {
-                    Err(e) => Err(to_server_fn_error(e)),
-                    Ok(result) => {if result.rows_affected() > 0 {
-                        Order::fetch_current_order_for_processor(processor_id, pool).await
-                    } else {
-                            Ok(None)
-                        }
-                    }
+        let response = Order::fetch_current_order_for_processor(processor_id, pool)
+            .await
+            .map_err(to_server_fn_error)?;
+        match response {
+            None => {
+                let result = sqlx::query!("UPDATE `orders` SET `processor_id` = ?, `status` = ? WHERE `id` =(SELECT `id` FROM (SELECT `id` FROM `orders` WHERE `processor_id` is null AND `status` = ? LIMIT 1) as x)"
+                    ,processor_id
+                    ,OrderStatus::InProcess
+                    ,OrderStatus::Uploaded)
+                    .execute(pool)
+                    .await
+                    .map_err(to_server_fn_error)?;
+                if result.rows_affected() > 0 {
+                    Order::fetch_current_order_for_processor(processor_id, pool).await
+                } else {
+                    Ok(None)
                 }
-            },
-            Ok(response) => Ok(response),
+            }
+            response => Ok(response),
         }
     }
 

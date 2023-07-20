@@ -19,14 +19,12 @@ pub async fn order_status_change_request(
     from: OrderStatus,
     to: OrderStatus,
 ) -> Result<UserOrder, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => match Order::update_status(order.id, from, to, &pool).await {
-            Err(e) => Err(e),
-            Ok(false) => Ok(order),
-            Ok(true) => UserOrder::get_by_order_id(order.id, &pool).await,
-        },
+    let pool = crate::pool(cx)?;
+    let success = Order::update_status(order.id, from, to, &pool).await?;
+    if !success {
+        return Ok(order);
     }
+    UserOrder::get_by_order_id(order.id, &pool).await
 }
 
 #[component]

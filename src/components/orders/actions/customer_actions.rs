@@ -9,22 +9,14 @@ use crate::models::order::Order;
 
 #[server(DeleteOrderRequest, "/api")]
 pub async fn delete_order_request(cx: Scope, order_id: u64) -> Result<bool, ServerFnError> {
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((pool, crate::models::user::User { id, .. })) => {
-            Order::delete(order_id, id, &pool).await
-        }
-    }
+    let (pool, crate::models::user::User { id, .. }) = crate::server::pool_and_current_user(cx)?;
+    Order::delete(order_id, id, &pool).await
 }
 
 #[server(StartCashPaymentRequest, "/api")]
 pub async fn start_cash_payment_request(cx: Scope, order_id: u64) -> Result<bool, ServerFnError> {
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((pool, crate::models::user::User { id, .. })) => {
-            Order::start_payment_cash(order_id, id, &pool).await
-        }
-    }
+    let (pool, crate::models::user::User { id, .. }) = crate::server::pool_and_current_user(cx)?;
+    Order::start_payment_cash(order_id, id, &pool).await
 }
 
 #[server(StartStripePaymentRequest, "/api")]
@@ -33,26 +25,19 @@ pub async fn start_stripe_payment_request(
     order_id: u64,
 ) -> Result<String, ServerFnError> {
     use crate::server::stripe::get_payment_link;
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((pool, current_user)) => {
-            let order_ref = format!("Email: {}, Order #:{}", current_user.email, order_id);
+    let (pool, current_user) = crate::server::pool_and_current_user(cx)?;
+    let order_ref = format!("Email: {}, Order #:{}", current_user.email, order_id);
 
-            match Order::start_payment_stripe(order_id, current_user.id, order_ref, &pool).await {
-                Ok(true) => match Order::get_by_id(order_id, &pool).await {
-                    Err(e) => Err(e),
-                    Ok(None) => Err(ServerFnError::ServerError(
-                        "Unable to fetch order".to_string(),
-                    )),
-                    Ok(Some(order)) => get_payment_link(cx, order).await,
-                },
-                Ok(false) => Err(ServerFnError::ServerError(
-                    "Error starting Stripe Request".to_string(),
-                )),
-                Err(e) => Err(e),
-            }
-        }
+    let response = Order::start_payment_stripe(order_id, current_user.id, order_ref, &pool).await?;
+    if !response {
+        return Err(ServerFnError::ServerError(
+            "Error starting Stripe Request".to_string(),
+        ));
     }
+    let order = Order::get_by_id(order_id, &pool)
+        .await?
+        .ok_or(ServerFnError::ServerError("Unable to fetch order".into()))?;
+    get_payment_link(cx, order).await
 }
 #[component]
 pub fn CustomerActions(cx: Scope, order: UserOrder) -> impl IntoView {

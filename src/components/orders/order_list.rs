@@ -7,10 +7,8 @@ use crate::{
 
 #[server(GetOrdersRequest, "/api")]
 pub async fn get_orders_request(cx: Scope) -> Result<Vec<UserOrder>, ServerFnError> {
-    match crate::server::pool_and_current_user(cx) {
-        Err(e) => Err(e),
-        Ok((pool, current_user)) => current_user.orders(&pool).await,
-    }
+    let (pool, current_user) = crate::server::pool_and_current_user(cx)?;
+    current_user.orders(&pool).await
 }
 
 #[component]

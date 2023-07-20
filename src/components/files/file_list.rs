@@ -26,10 +26,8 @@ pub async fn get_order_items(
     order: Order,
     mode: UploaderMode,
 ) -> Result<Vec<OrderItem>, ServerFnError> {
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => order.get_order_items(mode, &pool).await,
-    }
+    let pool = crate::pool(cx)?;
+    order.get_order_items(mode, &pool).await
 }
 
 #[server(DeleteOrderItemRequest, "/api")]
@@ -39,23 +37,13 @@ pub async fn delete_order_item_request(
     order_item: OrderItem,
 ) -> Result<UserOrder, ServerFnError> {
     let mode = order_item.mode;
-    match crate::pool(cx) {
-        Err(e) => Err(e),
-        Ok(pool) => {
-            let prefix = format!("/{:0>6}/{:?}", order.id, mode).to_lowercase();
-            let path = format!("{prefix}/{}", order_item.file_name);
-            match crate::server::storage::delete_file(path).await {
-                Err(e) => Err(e),
-                Ok(_) => match OrderItem::delete(order_item.id, &pool).await {
-                    Err(e) => Err(e),
-                    Ok(_) => match order.revert_uploaded_status(mode, &pool).await {
-                        Err(e) => Err(e),
-                        Ok(_) => UserOrder::get_by_order_id(order.id, &pool).await,
-                    },
-                },
-            }
-        }
-    }
+    let pool = crate::pool(cx)?;
+    let prefix = format!("/{:0>6}/{:?}", order.id, mode).to_lowercase();
+    let path = format!("{prefix}/{}", order_item.file_name);
+    crate::server::storage::delete_file(path).await?;
+    OrderItem::delete(order_item.id, &pool).await?;
+    order.revert_uploaded_status(mode, &pool).await?;
+    UserOrder::get_by_order_id(order.id, &pool).await
 }
 
 #[server(RefreshGetUrlsRequest, "/api")]
@@ -66,30 +54,19 @@ pub async fn refresh_get_urls_request(
 ) -> Result<bool, ServerFnError> {
     use super::uploader::get_mime_type;
     use crate::server::storage::get_prefix;
-    match crate::server::pool_and_auth(cx) {
-        Err(e) => Err(e),
-        Ok((pool, _auth)) => match OrderItem::get_order_items_by_order_id(order_id, mode, &pool)
-            .await
-        {
-            Err(e) => Err(e),
-            Ok(order_items) => {
-                for order_item in order_items {
-                    let file_name = order_item.file_name.clone();
-                    let Ok(mime_type) = get_mime_type(file_name.clone()) else {
+    let (pool, _) = crate::server::pool_and_auth(cx)?;
+    let order_items = OrderItem::get_order_items_by_order_id(order_id, mode, &pool).await?;
+    for order_item in order_items {
+        let file_name = order_item.file_name.clone();
+        let Ok(mime_type) = get_mime_type(file_name.clone()) else {
                         return Err(ServerFnError::ServerError("Invalid file type".to_string()));
                     };
-                    let prefix = get_prefix(order_id, mode);
-                    match crate::server::storage::create_presigned_url(prefix, file_name, mime_type)
-                        .await
-                    {
-                        Err(e) => return Err(e),
-                        Ok(get_url) => _ = order_item.update_get_url(get_url, &pool).await,
-                    };
-                }
-                Ok(true)
-            }
-        },
+        let prefix = get_prefix(order_id, mode);
+        let get_url =
+            crate::server::storage::create_presigned_url(prefix, file_name, mime_type).await?;
+        _ = order_item.update_get_url(get_url, &pool).await;
     }
+    Ok(true)
 }
 
 #[component]
