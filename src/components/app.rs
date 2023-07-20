@@ -35,8 +35,7 @@ pub fn App(cx: Scope) -> impl IntoView {
     provide_context::<ReadSignal<AuthUser>>(cx, auth_user);
     provide_context::<WriteSignal<AuthUser>>(cx, set_auth_user);
 
-    let app_name_resource =
-        create_resource(cx, || (), move |_| async move { get_app_name(cx).await });
+    let app_name_resource = create_resource(cx, || (), move |_| get_app_name(cx));
 
     let app_name = Signal::derive(cx, move || {
         app_name_resource

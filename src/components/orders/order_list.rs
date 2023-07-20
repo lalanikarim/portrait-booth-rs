@@ -19,7 +19,7 @@ pub fn OrderList(cx: Scope) -> impl IntoView {
     let orders_resource = create_resource(
         cx,
         move || refresh_list_action.version().get(),
-        move |_| async move { get_orders_request(cx).await },
+        move |_| get_orders_request(cx),
     );
 
     view! { cx,

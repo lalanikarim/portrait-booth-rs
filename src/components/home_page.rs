@@ -76,11 +76,10 @@ pub fn HomePage(cx: Scope) -> impl IntoView {
     let home_page_resource = create_resource(
         cx,
         move || (completed.version().get(),),
-        move |_| async move { home_page_request(cx).await },
+        move |_| home_page_request(cx),
     );
     provide_context::<WriteSignal<HomePageViews>>(cx, set_show_view);
-    let unit_price_resource =
-        create_resource(cx, || (), move |_| async move { get_unit_price().await });
+    let unit_price_resource = create_resource(cx, || (), move |_| get_unit_price());
     provide_context(cx, unit_price_resource);
     view! { cx,
         <h1 class="p-6 text-4xl">{move || app_name.get().0}</h1>

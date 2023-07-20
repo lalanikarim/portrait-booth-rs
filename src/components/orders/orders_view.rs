@@ -31,7 +31,7 @@ pub fn OrdersView(cx: Scope) -> impl IntoView {
     let order_creation_setting = create_resource(
         cx,
         move || order.get(),
-        move |_| async move { get_allow_order_creation_setting(cx).await },
+        move |_| get_allow_order_creation_setting(cx),
     );
 
     view! { cx,

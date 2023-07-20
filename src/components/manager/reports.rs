@@ -31,16 +31,9 @@ pub async fn get_collection_report(cx: Scope) -> Result<Vec<PaymentCollection>, 
 
 #[component]
 pub fn Reports(cx: Scope) -> impl IntoView {
-    let order_counts_report = create_resource(
-        cx,
-        || (),
-        move |_| async move { get_order_count_by_status_report(cx).await },
-    );
-    let collection_report = create_resource(
-        cx,
-        || (),
-        move |_| async move { get_collection_report(cx).await },
-    );
+    let order_counts_report =
+        create_resource(cx, || (), move |_| get_order_count_by_status_report(cx));
+    let collection_report = create_resource(cx, || (), move |_| get_collection_report(cx));
     view! { cx,
         <div class="container-lg">
             <h2 class="header">"Reports"</h2>

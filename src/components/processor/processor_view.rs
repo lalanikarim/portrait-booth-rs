@@ -86,7 +86,7 @@ pub fn ProcessorView(cx: Scope) -> impl IntoView {
     let order_resource = create_resource(
         cx,
         move || user_order.get(),
-        move |_| async move { fetch_order_request(cx).await },
+        move |_| fetch_order_request(cx),
     );
     let skip_order_click = move |_: MouseEvent| {
         skip_order_action.dispatch(SkipOrderRequest {});

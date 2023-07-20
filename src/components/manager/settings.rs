@@ -25,7 +25,7 @@ pub fn Settings(cx: Scope) -> impl IntoView {
     let allow_create_order_setting = create_resource(
         cx,
         move || toggle_allow_order_creation_action.version().get(),
-        move |_| async move { get_allow_order_creation_setting(cx).await },
+        move |_| get_allow_order_creation_setting(cx),
     );
     view! { cx,
         <div class="container">

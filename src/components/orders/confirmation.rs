@@ -69,10 +69,7 @@ pub fn Confirmation(cx: Scope) -> impl IntoView {
     let order_resource = create_resource(
         cx,
         || (),
-        move |_| async move {
-            log!("Sending: {:#?}", params.get());
-            store_stripe_confirmation(cx, params.get()).await
-        },
+        move |_| store_stripe_confirmation(cx, params.get()),
     );
     let on_click = move |_: MouseEvent| {
         let navigate = use_navigate(cx);
