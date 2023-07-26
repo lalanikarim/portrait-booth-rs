@@ -3,6 +3,7 @@ use leptos::*;
 use crate::{
     components::{
         app::AuthUser,
+        files::{file_list::FileList, uploader::UploaderMode},
         orders::order_details::OrderDetails,
         search::{
             operator_uploader::OperatorUploader, order_search::OrderSearch,
@@ -50,22 +51,28 @@ pub fn SearchView(cx: Scope) -> impl IntoView {
     view! { cx,
         <OrderSearch order_search_action/>
         {move || match order.get() {
-            None => {
-                view! { cx, <SearchResults orders=order_search_action.value()/> }
-                    .into_view(cx)
-            }
+            None => view! { cx, <SearchResults orders=order_search_action.value()/> }.into_view(cx),
             Some(order) => {
                 let mut views = Vec::new();
-                views
-                    .push(
-                        view! { cx, <OrderDetails order=order.clone()/> },
-                    );
+                views.push(view! { cx, <OrderDetails order=order.clone()/> });
                 if let Some(user) = auth_user.get() {
-                    if user.role == Role::Operator && (order.status == OrderStatus::Uploading || order.status == OrderStatus::Uploaded) {
-                        views
-                            .push(
-                                view!{cx,<OperatorUploader order_resource />}
-                            );
+                    if user.role == Role::Operator
+                        && (order.status == OrderStatus::Uploading
+                            || order.status == OrderStatus::Uploaded)
+                    {
+                        views.push(view! { cx, <OperatorUploader order_resource/> });
+                    }
+                    if user.role == Role::Manager {
+                        if let Some(Ok(Some(order))) = order_resource.read(cx) {
+                            views
+                                .push(
+                                    view! { cx,
+                                        <FileList order=order.clone() mode=UploaderMode::Original/>
+                                        <FileList order=order.clone() mode=UploaderMode::Processed/>
+                                    }
+                                        .into_view(cx),
+                                );
+                        }
                     }
                 }
                 views.collect_view(cx)
