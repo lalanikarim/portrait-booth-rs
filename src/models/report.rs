@@ -26,6 +26,17 @@ pub struct PaymentCollection {
     pub total: Option<i64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct OrderCountByProcessor {
+    pub name: String,
+    pub email: String,
+    pub status: OrderStatus,
+    pub order_count: i64,
+    pub photos_count: Option<i64>,
+    pub uploaded_count: i64,
+    pub processed_count: i64,
+}
+
 pub struct Report {}
 
 #[cfg(feature = "ssr")]
@@ -47,6 +58,27 @@ impl Report {
         left join users u on u.id = o.cashier_id 
         where o.status >= 3
         GROUP by u.name, u.email  "#
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(to_server_fn_error)
+    }
+
+    pub async fn get_order_count_by_processor(
+        pool: &MySqlPool,
+    ) -> Result<Vec<OrderCountByProcessor>, ServerFnError> {
+        sqlx::query_as!(
+            OrderCountByProcessor,
+            r#"select u.name, u.email, o.status as `status:_`, 
+            cast(count(1) as signed) as order_count,
+            cast(sum(o.no_of_photos) as signed) as photos_count, 
+            cast(count(oi.id) as signed) as uploaded_count, 
+            cast(count(oi2.id) as signed) as processed_count
+            from users u 
+            inner join orders o on o.processor_id = u.id 
+            left join order_items oi on oi.order_id = o.id and oi.mode = 1
+            left join order_items oi2 on oi2.order_id = o.id and oi2.mode = 2
+            group by u.name, u.email, o.status"#
         )
         .fetch_all(pool)
         .await
