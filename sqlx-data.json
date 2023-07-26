@@ -936,6 +936,109 @@
     },
     "query": "UPDATE `orders` SET no_of_photos = ?,order_total = ? WHERE id = ?"
   },
+  "98eaa8934621260bdbf882d0ad7160bdb0e07f04fff6aba24a55a8c39713f84b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "status:_",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 4,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "order_count",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "photos_count",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "uploaded_count",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "processed_count",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "select u.name, u.email, o.status as `status:_`, \n            cast(count(1) as signed) as order_count,\n            cast(sum(o.no_of_photos) as signed) as photos_count, \n            cast(count(oi.id) as signed) as uploaded_count, \n            cast(count(oi2.id) as signed) as processed_count\n            from users u \n            inner join orders o on o.processor_id = u.id \n            left join order_items oi on oi.order_id = o.id and oi.mode = 1\n            left join order_items oi2 on oi2.order_id = o.id and oi2.mode = 2\n            group by u.name, u.email, o.status"
+  },
   "9da32aa8b6f3f7c4c9651aa8d80d63a0eb97b3119ad95df887786a35edda20e3": {
     "describe": {
       "columns": [],
