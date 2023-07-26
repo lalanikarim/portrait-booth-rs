@@ -172,6 +172,9 @@ pub fn Reports(cx: Scope) -> impl IntoView {
                                                         {format!("{} ({})", report_item.name, report_item.email)}
                                                     </td>
                                                     <td class="border border-slate-300">
+                                                        {format!("{:?}",report_item.status)}
+                                                    </td>
+                                                    <td class="border border-slate-300">
                                                         {report_item.order_count}
                                                     </td>
                                                     <td class="border border-slate-300">

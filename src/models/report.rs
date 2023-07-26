@@ -78,7 +78,8 @@ impl Report {
             inner join orders o on o.processor_id = u.id 
             left join order_items oi on oi.order_id = o.id and oi.mode = 1
             left join order_items oi2 on oi2.order_id = o.id and oi2.mode = 2
-            group by u.name, u.email, o.status"#
+            group by u.name, u.email, o.status
+            order by u.name, o.status"#
         )
         .fetch_all(pool)
         .await
