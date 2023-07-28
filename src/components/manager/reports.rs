@@ -155,11 +155,8 @@ pub fn Reports(cx: Scope) -> impl IntoView {
                                 <thead class="bg-slate-50">
                                     <tr>
                                         <th class="border border-slate-300">"Staff"</th>
-                                        <th class="border border-slate-300">"Status"</th>
                                         <th class="border border-slate-300">"Orders"</th>
                                         <th class="border border-slate-300">"Photos"</th>
-                                        <th class="border border-slate-300">"Uploaded"</th>
-                                        <th class="border border-slate-300">"Processed"</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -172,19 +169,10 @@ pub fn Reports(cx: Scope) -> impl IntoView {
                                                         {format!("{} ({})", report_item.name, report_item.email)}
                                                     </td>
                                                     <td class="border border-slate-300">
-                                                        {format!("{:?}",report_item.status)}
-                                                    </td>
-                                                    <td class="border border-slate-300">
                                                         {report_item.order_count}
                                                     </td>
                                                     <td class="border border-slate-300">
                                                         {report_item.photos_count}
-                                                    </td>
-                                                    <td class="border border-slate-300">
-                                                        {report_item.uploaded_count}
-                                                    </td>
-                                                    <td class="border border-slate-300">
-                                                        {report_item.processed_count}
                                                     </td>
                                                 </tr>
                                             }

@@ -30,11 +30,8 @@ pub struct PaymentCollection {
 pub struct OrderCountByProcessor {
     pub name: String,
     pub email: String,
-    pub status: OrderStatus,
     pub order_count: i64,
     pub photos_count: Option<i64>,
-    pub uploaded_count: i64,
-    pub processed_count: i64,
 }
 
 pub struct Report {}
@@ -69,15 +66,11 @@ impl Report {
     ) -> Result<Vec<OrderCountByProcessor>, ServerFnError> {
         sqlx::query_as!(
             OrderCountByProcessor,
-            r#"select u.name, u.email, o.status as `status:_`, 
+            r#"select u.name, u.email,  
             cast(count(1) as signed) as order_count,
-            cast(sum(o.no_of_photos) as signed) as photos_count, 
-            cast(count(oi.id) as signed) as uploaded_count, 
-            cast(count(oi2.id) as signed) as processed_count
+            cast(sum(o.no_of_photos) as signed) as photos_count 
             from users u 
             inner join orders o on o.processor_id = u.id 
-            left join order_items oi on oi.order_id = o.id and oi.mode = 1
-            left join order_items oi2 on oi2.order_id = o.id and oi2.mode = 2
             group by u.name, u.email, o.status
             order by u.name, o.status"#
         )
