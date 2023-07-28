@@ -71,8 +71,10 @@ impl Report {
             cast(sum(o.no_of_photos) as signed) as photos_count 
             from users u 
             inner join orders o on o.processor_id = u.id 
+            where o.status = ?
             group by u.name, u.email, o.status
-            order by u.name, o.status"#
+            order by u.name, o.status"#,
+            OrderStatus::ReadyForDelivery
         )
         .fetch_all(pool)
         .await

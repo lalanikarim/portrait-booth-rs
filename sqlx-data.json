@@ -926,70 +926,6 @@
     },
     "query": "INSERT INTO users (email,phone,password_hash,name,role) values (?,?,?,?,?)"
   },
-  "9095d44f6dc942afda05b2d63af4acd8ca49fb9ab1272e1a13741e8ee70f7332": {
-    "describe": {
-      "columns": [
-        {
-          "name": "name",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "email",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4101
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "order_count",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 129
-            },
-            "max_size": 21,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "photos_count",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 21,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select u.name, u.email,  \n            cast(count(1) as signed) as order_count,\n            cast(sum(o.no_of_photos) as signed) as photos_count \n            from users u \n            inner join orders o on o.processor_id = u.id \n            group by u.name, u.email, o.status\n            order by u.name, o.status"
-  },
   "958bee0c72e7539b41626d812c91d0cf14665c154bc54736f2bb57f0ed9fa987": {
     "describe": {
       "columns": [],
@@ -1682,6 +1618,70 @@
       }
     },
     "query": "DELETE FROM `orders` WHERE id = ? and customer_id = ?"
+  },
+  "eb348ee9d96257965ea9d3590fd1226a3d039f48f82530922bdf9f4d4fc6bfae": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "order_count",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "photos_count",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select u.name, u.email,  \n            cast(count(1) as signed) as order_count,\n            cast(sum(o.no_of_photos) as signed) as photos_count \n            from users u \n            inner join orders o on o.processor_id = u.id \n            where o.status = ?\n            group by u.name, u.email, o.status\n            order by u.name, o.status"
   },
   "ee1e1e287fd2ef09b4ae7e62613aaa401a2e1a864f222b7f28a025a48b5d5950": {
     "describe": {
